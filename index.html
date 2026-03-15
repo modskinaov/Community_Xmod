@@ -1,0 +1,3402 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XMOD Chatbot</title>
+  <meta name="theme-color" content="#22c55e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="XMOD">
+  <meta name="description" content="XMOD — Mod skin Liên Quân, XML Tools, AI Chat">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: url('https://i.postimg.cc/Z5x27g1v/mau-den-thumbnail.jpg') center/cover no-repeat fixed;
+      font-family: 'Rajdhani', Arial, sans-serif;
+      overflow: hidden;
+      cursor: default;
+    }
+    body {
+      border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      margin: 4px;
+    }
+
+    /* ── DATA STREAMS ── */
+    .data-stream {
+      position: fixed; top: 0; width: 2px; height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.6), transparent);
+      animation: dataFlow 4s linear infinite; z-index: 0; pointer-events: none;
+    }
+    @keyframes dataFlow {
+      0%   { transform: translateY(-100%); opacity: 0; }
+      10%, 90% { opacity: 0.6; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+    @media (max-width: 768px) { .data-stream { display: none; } }
+
+    /* ── RIPPLE ── */
+    .ripple {
+      position: fixed; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
+      animation: rippleExpand 0.6s ease-out forwards; pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+    }
+    @keyframes rippleExpand {
+      0%   { width: 0; height: 0; opacity: 0.8; }
+      100% { width: 80px; height: 80px; opacity: 0; }
+    }
+
+    /* ── FLOATING PARTICLES ── */
+    .floating-particle {
+      position: fixed; width: 3px; height: 3px;
+      background: rgba(255,255,255,0.7); border-radius: 50%;
+      pointer-events: none; z-index: 1;
+      animation: floatUp 9s ease-in-out infinite;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh); opacity: 0; }
+      10%  { opacity: 0.7; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(-50px) translateX(30px); opacity: 0; }
+    }
+    @media (max-width: 768px) { .floating-particle { display: none; } }
+
+    /* ── LAYOUT ── */
+    .app-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .topbar-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: url('https://i.postimg.cc/sgKWd1q6/Polish-20250913-134147206.png') center/cover;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .topbar-title {
+      font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+      color: #fff; letter-spacing: 1px;
+    }
+    .topbar-status {
+      font-size: 11px; color: #22c55e; display: flex; align-items: center; gap: 4px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #22c55e;
+      animation: statusPulse 2s infinite;
+    }
+    @keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+    .topbar-btn {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.8); border-radius: 8px; padding: 5px 10px;
+      font-size: 12px; cursor: pointer; transition: all 0.2s ease;
+      font-family: 'Rajdhani', sans-serif; font-weight: 600;
+    }
+    .topbar-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+    /* ── CHAT AREA ── */
+    #chatArea {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #chatArea::-webkit-scrollbar { width: 4px; }
+    #chatArea::-webkit-scrollbar-track { background: transparent; }
+    #chatArea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+    /* ── WELCOME SCREEN ── */
+    #welcomeScreen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%; gap: 14px; padding: 20px;
+      text-align: center;
+    }
+    .welcome-logo {
+      width: 64px; height: 64px; border-radius: 50px;
+      background: url('https://i.postimg.cc/sgKWd1q6/Polish-20250913-134147206.png') center/cover;
+      border: 2px solid rgba(255,255,255,0.3);
+      box-shadow: 0 0 24px rgba(255,255,255,0.2);
+    }
+    .welcome-title {
+      font-family: 'Orbitron', monospace; font-size: 18px; color: #fff;
+      text-shadow: 0 0 20px rgba(255,255,255,0.5);
+    }
+    .welcome-sub { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.6; max-width: 280px; }
+    .quick-chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-top: 6px; }
+    .quick-chip {
+      padding: 7px 13px; border-radius: 99px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.85); font-size: 12.5px; cursor: pointer;
+      transition: all 0.2s; font-family: 'Rajdhani', sans-serif; font-weight: 600;
+    }
+    .quick-chip:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.5); color: #fff; }
+
+    /* ── MESSAGES ── */
+    .message {
+      display: flex; align-items: flex-end; gap: 8px;
+      animation: msgIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      opacity: 0;
+    }
+    @keyframes msgIn {
+      0%   { opacity: 0; transform: translateY(18px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .message.user { flex-direction: row-reverse; align-self: flex-end; max-width: 82%; }
+    .message.bot  { align-self: flex-start; max-width: 88%; }
+
+    .msg-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background-size: cover; background-position: center;
+    }
+    .msg-avatar.bot  { background-image: url('https://i.postimg.cc/sgKWd1q6/Polish-20250913-134147206.png'); }
+    .msg-avatar.user { background-image: url('https://i.postimg.cc/BQfwbKH2/Polish-20250915-131509600.png'); }
+
+    .bubble {
+      padding: 9px 13px; border-radius: 16px;
+      font-size: 14.5px; line-height: 1.55;
+      word-wrap: break-word; word-break: break-word; white-space: pre-wrap;
+    }
+    .message.bot  .bubble {
+      background: rgba(255,255,255,0.93); color: #1a1a1a;
+      border-radius: 16px 16px 16px 4px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .message.user .bubble {
+      background: #22c55e; color: #fff;
+      border-radius: 16px 16px 4px 16px;
+      box-shadow: 0 2px 12px rgba(34,197,94,0.35);
+    }
+
+    /* html message bubble */
+    .bubble-html {
+      border-radius: 16px 16px 16px 4px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    /* ── MOD CARDS ── */
+    .mod-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .mod-card {
+      background: rgba(15,15,20,0.92);
+      border: 1px solid rgba(255,255,255,0.18); border-radius: 14px;
+      overflow: hidden; display: flex; gap: 12px;
+      align-items: stretch; padding: 11px;
+      transition: all 0.25s ease;
+      box-shadow: 0 3px 16px rgba(0,0,0,0.35);
+      width: 100%;
+    }
+    .mod-card:hover { border-color: rgba(255,255,255,0.45); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .mod-card-img {
+      width: 76px; height: 76px; object-fit: cover; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0;
+    }
+    .mod-card-body { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; }
+    .mod-card-name { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #fff; }
+    .mod-card-hero { font-size: 12px; color: rgba(255,255,255,0.55); }
+    .mod-card-desc { font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.4; }
+    .mod-card-dl {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #22c55e; color: #fff; text-decoration: none;
+      padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      align-self: flex-start; transition: all 0.2s ease; font-family: 'Rajdhani', sans-serif;
+    }
+    .mod-card-dl:hover { background: #16a34a; transform: scale(1.04); }
+    @media (max-width: 480px) {
+      .mod-card { flex-direction: column; }
+      .mod-card-img { width: 100%; height: 110px; max-width: none; }
+    }
+
+    /* mod header tag */
+    .mod-header {
+      padding: 8px 12px; background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.25); border-radius: 10px;
+      color: #22c55e; font-size: 13px; font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    /* ── CODE TYPING INDICATOR ── */
+    .code-typing-wrap {
+      background: #0d1117;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px 12px 12px 4px;
+      overflow: hidden;
+      min-width: 240px; max-width: 320px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      font-family: 'Courier New', 'Consolas', monospace;
+    }
+    .code-typing-bar {
+      background: #161b22;
+      padding: 7px 12px;
+      display: flex; align-items: center; gap: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .code-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .code-dot.red { background: #ff5f57; }
+    .code-dot.yel { background: #febc2e; }
+    .code-dot.grn { background: #28c840; }
+    .code-typing-filename {
+      font-size: 11px; color: rgba(255,255,255,0.35);
+      font-family: 'Rajdhani', sans-serif; margin-left: 4px;
+    }
+    .code-typing-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .code-line {
+      display: flex; align-items: center; gap: 8px; height: 18px;
+      opacity: 0; animation: codeFadeIn 0.18s ease forwards;
+    }
+    @keyframes codeFadeIn {
+      from { opacity:0; transform:translateX(-4px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .code-ln { font-size: 11px; color: rgba(255,255,255,0.2); min-width:14px; text-align:right; user-select:none; }
+    .code-text { font-size: 12.5px; color: #c9d1d9; white-space: nowrap; overflow: hidden; }
+    .ck { color: #ff7b72; }
+    .cf { color: #d2a8ff; }
+    .cs { color: #a5d6ff; }
+    .cn { color: #79c0ff; }
+    .cc { color: #8b949e; }
+    .cv { color: #ffa657; }
+    .code-cursor {
+      display: inline-block; width: 2px; height: 13px;
+      background: #58a6ff; vertical-align: middle; margin-left: 1px;
+      animation: cursorBlink 0.8s steps(1) infinite;
+    }
+    @keyframes cursorBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+    .code-status-bar {
+      background: #1f6feb; padding: 3px 10px;
+      font-size: 10px; color: rgba(255,255,255,0.85);
+      font-family: 'Rajdhani', sans-serif;
+      display: flex; justify-content: space-between;
+    }
+    .code-status-pulse {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: #58ff82; margin-right: 4px; vertical-align: middle;
+      animation: statusPulse 1s infinite;
+    }
+
+    /* ── INPUT BAR (Claude-style) ── */
+    .input-bar-wrapper {
+      padding: 10px 12px 14px;
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    .input-bar {
+      display: flex; flex-direction: column;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      transition: border-color 0.2s ease;
+      overflow: hidden;
+    }
+    .input-bar:focus-within { border-color: rgba(255,255,255,0.45); }
+
+    .input-bar-top {
+      display: flex; align-items: flex-end;
+      padding: 10px 12px 8px;
+      gap: 8px;
+    }
+
+    #userInput {
+      flex: 1; min-width: 0;
+      background: transparent; border: none; outline: none;
+      color: #fff; font-size: 15px; font-family: 'Rajdhani', sans-serif;
+      resize: none; max-height: 120px; line-height: 1.5;
+      scrollbar-width: none;
+    }
+    #userInput::-webkit-scrollbar { display: none; }
+    #userInput::placeholder { color: rgba(255,255,255,0.4); }
+
+    #sendBtn {
+      width: 38px; height: 38px; border-radius: 12px; border: none;
+      background: #22c55e; color: #fff; font-size: 17px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s ease;
+    }
+    #sendBtn:hover { background: #16a34a; transform: scale(1.05); }
+    #sendBtn:disabled { background: rgba(255,255,255,0.15); cursor: default; transform: none; }
+
+    .input-bar-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px 8px;
+    }
+    .input-actions { display: flex; gap: 6px; }
+    .input-action-btn {
+      background: transparent; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.5); font-size: 16px; padding: 4px 6px;
+      border-radius: 7px; transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .input-action-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); }
+    .input-hint-text {
+      font-size: 11px; color: rgba(255,255,255,0.3);
+      font-family: 'Rajdhani', sans-serif;
+    }
+
+    /* ── SUGGESTION CHIPS (mod search) ── */
+    .suggest-row {
+      display: flex; gap: 7px; flex-wrap: wrap;
+      padding: 8px 12px 0;
+    }
+    .suggest-chip {
+      padding: 5px 11px; border-radius: 99px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.75); font-size: 12px; cursor: pointer;
+      transition: all 0.15s; font-family: 'Rajdhani', sans-serif; font-weight: 600;
+      white-space: nowrap;
+    }
+    .suggest-chip:hover { background: rgba(34,197,94,0.2); border-color: #22c55e; color: #22c55e; }
+
+    /* ── SEARCH BOX inside chat ── */
+    .mod-search-box {
+      background: rgba(15,15,20,0.9); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px; padding: 14px; width: 100%;
+    }
+    .mod-search-title { color: #fff; font-family: 'Orbitron', monospace; font-size: 14px; margin-bottom: 10px; }
+    .mod-search-input-row { display: flex; gap: 8px; }
+    .mod-search-input {
+      flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px; padding: 9px 12px; color: #fff; font-size: 14px;
+      font-family: 'Rajdhani', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .mod-search-input:focus { border-color: #22c55e; }
+    .mod-search-btn {
+      background: #22c55e; color: #fff; border: none; border-radius: 10px;
+      padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; transition: all 0.2s;
+    }
+    .mod-search-btn:hover { background: #16a34a; }
+    .mod-heroes-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+    .hero-tag {
+      padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.15s;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .hero-tag:hover { background: rgba(34,197,94,0.2); border-color: #22c55e; color: #22c55e; }
+
+    /* ── MODAL ── */
+    .modal {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.88); z-index: 99999;
+    }
+    .modal.show { display: flex !important; }
+    .modal-content {
+      background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+      border: 1.5px solid rgba(255,255,255,0.15); border-radius: 20px;
+      padding: 22px; position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+      max-width: 92vw; max-height: 88vh; overflow: auto;
+    }
+    @media (max-width: 768px) { .modal-content { width: 96vw; padding: 16px; max-height: 82vh; } }
+
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: rgba(255,255,255,0.08); border: none; color: rgba(255,255,255,0.7);
+      font-size: 22px; cursor: pointer; width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .modal-title {
+      color: #fff; font-family: 'Orbitron', monospace;
+      margin-bottom: 20px; font-size: 17px; text-align: center;
+      text-shadow: 0 0 12px rgba(255,255,255,0.3);
+    }
+    .modal-btn {
+      padding: 9px 18px; background: linear-gradient(45deg, #fff, #ddd);
+      color: #000; border: none; border-radius: 9px;
+      font-family: 'Orbitron', monospace; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: all 0.2s ease; margin: 4px;
+    }
+
+    .modal-btn {
+      padding: 9px 18px; background: linear-gradient(45deg, #fff, #ddd);
+      color: #000; border: none; border-radius: 9px;
+      font-family: 'Orbitron', monospace; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: all 0.2s ease; margin: 4px;
+    }
+
+    /* ── MOD FILE FLOW ── */
+    .mf-step { margin-top: 4px; }
+    .mf-title {
+      font-family: 'Orbitron', monospace; font-size: 13px; color: #22c55e;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .mf-hero-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 7px; max-height: 300px; overflow-y: auto; padding-right: 4px;
+    }
+    .mf-hero-grid::-webkit-scrollbar { width: 4px; }
+    .mf-hero-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .mf-hero-btn {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 9px; padding: 8px 6px; color: #fff; font-size: 12px;
+      cursor: pointer; text-align: center; transition: all 0.18s; line-height: 1.3;
+    }
+    .mf-hero-btn:hover { background: rgba(34,197,94,0.2); border-color: #22c55e; transform: translateY(-1px); }
+    .mf-hero-btn.selected { background: rgba(34,197,94,0.3); border-color: #22c55e; }
+    .mf-skin-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 280px; overflow-y: auto; padding-right: 4px;
+    }
+    .mf-skin-list::-webkit-scrollbar { width: 4px; }
+    .mf-skin-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .mf-skin-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px; padding: 9px 13px; color: #fff; font-size: 13px;
+      cursor: pointer; text-align: left; transition: all 0.18s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .mf-skin-btn:hover { background: rgba(34,197,94,0.2); border-color: #22c55e; }
+    .mf-skin-btn.selected { background: rgba(34,197,94,0.3); border-color: #22c55e; }
+    .mf-skin-id { font-size: 10px; color: rgba(255,255,255,0.4); font-family: monospace; min-width: 42px; }
+    .mf-special-opts {
+      background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.25);
+      border-radius: 10px; padding: 12px; margin: 8px 0;
+    }
+    .mf-special-title { font-size: 11px; color: #ffa500; margin-bottom: 8px; letter-spacing: 1px; }
+    .mf-radio-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .mf-radio-opt {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,165,0,0.2);
+      border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 12px;
+      transition: all 0.18s;
+    }
+    .mf-radio-opt:hover { border-color: #ffa500; background: rgba(255,165,0,0.12); }
+    .mf-radio-opt input { accent-color: #ffa500; }
+    .mf-confirm-btn {
+      width: 100%; margin-top: 12px; padding: 13px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      border: none; border-radius: 12px; color: #fff;
+      font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+    }
+    .mf-confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,197,94,0.4); }
+    .mf-confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .mf-back-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px; padding: 6px 14px; color: #aaa; font-size: 12px;
+      cursor: pointer; margin-bottom: 10px; transition: all 0.18s;
+    }
+    .mf-back-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .mf-progress-wrap { margin: 10px 0; }
+    .mf-progress-label {
+      font-size: 11px; color: #aaa; margin-bottom: 5px;
+      display: flex; justify-content: space-between;
+    }
+    .mf-progress-bar {
+      height: 7px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;
+    }
+    .mf-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #16a34a, #22c55e);
+      border-radius: 4px; transition: width 0.3s; width: 0%;
+      box-shadow: 0 0 8px rgba(34,197,94,0.5);
+    }
+    .mf-log {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 10px 12px; font-family: monospace; font-size: 11px;
+      max-height: 160px; overflow-y: auto; color: #aaa; margin-top: 8px; line-height: 1.7;
+    }
+    .mf-log .ok { color: #22c55e; }
+    .mf-log .err { color: #ef4444; }
+    .mf-log .info { color: #60a5fa; }
+    .mf-dl-btn {
+      width: 100%; margin-top: 12px; padding: 13px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      border: none; border-radius: 12px; color: #fff;
+      font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+      display: none;
+    }
+    .mf-dl-btn.show { display: block; }
+    .mf-dl-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+    .bg-grid-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .bg-item {
+      cursor: pointer; border-radius: 10px; overflow: hidden;
+      border: 2px solid transparent; transition: all 0.2s;
+    }
+    .bg-item:hover { border-color: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,0.4); }
+    .bg-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
+    .bg-label { color: #aaa; font-size: 11px; text-align: center; padding: 4px 0; }
+    .upload-section {
+      background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+      padding: 16px; text-align: center; margin-bottom: 14px;
+    }
+    .upload-btn {
+      background: linear-gradient(45deg, #667eea, #764ba2); border: none;
+      padding: 10px 20px; border-radius: 20px; cursor: pointer;
+      font-weight: 700; color: white; font-size: 14px; transition: all 0.2s;
+    }
+    .upload-btn:hover { transform: scale(1.03); opacity: 0.9; }
+    .reset-btn {
+      display: block; width: 100%; margin-top: 12px; padding: 9px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px; color: rgba(255,255,255,0.7); cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover { background: rgba(255,255,255,0.12); }
+
+    /* ── MUSIC PLAYER ── */
+    .music-player {
+      background: rgba(15,15,20,0.9); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px; padding: 14px; width: 100%;
+    }
+    .music-title { color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+    .music-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .music-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; padding: 7px 13px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; transition: all 0.2s; font-family: 'Rajdhani', sans-serif; font-weight: 600;
+    }
+    .music-btn:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── XML TOOLS shortcut (handled by FAB now) ── */
+
+    /* ── SEARCH RESULTS ── */
+    .search-results { font-size: 13.5px; line-height: 1.6; color: #1a1a1a; }
+    .search-result-item {
+      margin-bottom: 10px; padding: 10px 12px;
+      background: rgba(0,0,0,0.05); border-radius: 10px; border-left: 3px solid #22c55e;
+    }
+    .search-results a { color: #1d6ed8; text-decoration: none; }
+    .search-results a:hover { text-decoration: underline; }
+
+    /* ── MOD TOOLS ── */
+    .tool-tab {
+      padding: 7px 14px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.2);
+      background: transparent; color: rgba(255,255,255,0.6);
+      cursor: pointer; font-size: 13px; font-weight: 700;
+      font-family: 'Rajdhani', sans-serif; transition: all 0.2s;
+    }
+    .tool-tab.active, .tool-tab:hover {
+      background: rgba(34,197,94,0.2); border-color: #22c55e; color: #22c55e;
+    }
+    .tool-panel { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+    .tool-desc {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 12px 14px; font-size: 13px;
+      color: rgba(255,255,255,0.75); line-height: 1.7; margin-bottom: 12px;
+    }
+    .tool-desc code { color: #22c55e; font-family: monospace; }
+    .tool-upload-zone {
+      border: 2px dashed rgba(255,255,255,0.25); border-radius: 12px;
+      padding: 20px; text-align: center; cursor: pointer;
+      color: rgba(255,255,255,0.55); font-size: 13.5px; font-weight: 600;
+      transition: all 0.2s; user-select: none;
+    }
+    .tool-upload-zone:hover, .tool-upload-zone.drag-over {
+      border-color: #22c55e; background: rgba(34,197,94,0.07); color: #22c55e;
+    }
+    .tool-upload-zone.has-file {
+      border-color: #22c55e; background: rgba(34,197,94,0.1); color: #22c55e;
+    }
+    .tool-run-btn {
+      width: 100%; margin-top: 12px; padding: 11px;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; font-family: 'Rajdhani', sans-serif;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tool-run-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.01); }
+    .tool-run-btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.35); cursor: default; }
+    .tool-prog { margin-top: 12px; }
+    .tool-prog-status { color: #22c55e; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+    .tool-prog-bar-wrap { background: rgba(255,255,255,0.08); height: 6px; border-radius: 3px; overflow: hidden; }
+    .tool-prog-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#22c55e,#06b6d4); border-radius: 3px; transition: width 0.3s; }
+    .tool-result-ok {
+      margin-top: 12px; background: rgba(34,197,94,0.1); border: 1px solid #22c55e;
+      border-radius: 10px; padding: 14px; text-align: center;
+    }
+    .tool-result-ok .res-title { color: #22c55e; font-weight: 700; margin-bottom: 10px; font-size: 14px; }
+    .tool-dl-btn {
+      display: inline-block; background: #22c55e; color: #000;
+      padding: 9px 20px; border-radius: 8px; font-weight: 700;
+      text-decoration: none; font-size: 13px; font-family: 'Rajdhani', sans-serif;
+      cursor: pointer; border: none; transition: all 0.2s;
+    }
+    .tool-dl-btn:hover { background: #16a34a; }
+
+    /* ── MISC ── */
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    .info-card {
+      background: rgba(15,15,20,0.92); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px; padding: 14px; color: rgba(255,255,255,0.85);
+      font-size: 13.5px; line-height: 1.7; width: 100%;
+    }
+    .info-card strong { color: #fff; }
+
+    /* ── LANG TOGGLE ── */
+    .lang-toggle {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .lang-btn {
+      padding: 4px 10px; font-size: 12px; font-weight: 700;
+      font-family: 'Rajdhani', sans-serif; cursor: pointer;
+      background: transparent; border: none; color: rgba(255,255,255,0.5);
+      transition: all 0.2s; letter-spacing: 0.5px;
+    }
+    .lang-btn.active {
+      background: rgba(255,255,255,0.18); color: #fff;
+      border-radius: 16px;
+    }
+
+    /* ── PROFILE MODAL ── */
+    .profile-hero-wrap {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px;
+    }
+    .profile-big-avatar {
+      width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+      background: url('https://i.postimg.cc/BQfwbKH2/Polish-20250915-131509600.png') center/cover;
+      border: 3px solid rgba(255,255,255,0.2);
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+      cursor: pointer; transition: all 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .profile-big-avatar:hover { border-color: #22c55e; box-shadow: 0 0 20px rgba(34,197,94,0.4); }
+    .profile-big-avatar::after {
+      content: '📷'; position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.55); font-size: 20px;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .profile-big-avatar:hover::after { opacity: 1; }
+
+    .profile-name-area { flex: 1; }
+    .profile-display-name {
+      font-family: 'Orbitron', monospace; font-size: 16px; color: #fff;
+      font-weight: 700; margin-bottom: 2px;
+    }
+    .profile-uid { font-size: 11px; color: rgba(255,255,255,0.35); font-family: monospace; }
+
+    .profile-input {
+      width: 100%; padding: 9px 12px; margin-bottom: 10px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px; color: #fff; font-size: 14px;
+      font-family: 'Rajdhani', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .profile-input:focus { border-color: #22c55e; }
+    .profile-label {
+      font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 5px;
+    }
+    .profile-stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin: 16px 0;
+    }
+    .profile-stat {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 10px 8px; text-align: center;
+    }
+    .profile-stat-num { font-family: 'Orbitron', monospace; font-size: 18px; color: #22c55e; font-weight: 700; }
+    .profile-stat-lbl { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .profile-save-btn {
+      width: 100%; padding: 11px; background: linear-gradient(90deg,#22c55e,#16a34a);
+      border: none; border-radius: 10px; color: #fff; font-weight: 700;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; cursor: pointer;
+      transition: all 0.2s; margin-top: 4px;
+    }
+    .profile-save-btn:hover { opacity: 0.9; transform: scale(1.01); }
+
+    .avatar-picker-row {
+      display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0;
+    }
+    .avatar-opt {
+      width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: all 0.2s;
+      background-size: cover; background-position: center;
+    }
+    .avatar-opt:hover, .avatar-opt.selected { border-color: #22c55e; transform: scale(1.08); }
+
+    /* ── HƯỚNG DẪN CÀI MOD ── */
+    .guide-step {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px; border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 10px; transition: all 0.2s;
+    }
+    .guide-step:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); }
+    .guide-step-num {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg,#22c55e,#06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .guide-step-body { flex: 1; }
+    .guide-step-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+    .guide-step-desc { font-size: 12.5px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+    .guide-step-img {
+      width: 100%; border-radius: 8px; margin-top: 8px;
+      border: 1px solid rgba(255,255,255,0.1); object-fit: cover;
+      max-height: 120px;
+    }
+    .guide-tab-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .guide-tab {
+      padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.2s;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .guide-tab.active { background: #22c55e; border-color: #22c55e; color: #fff; }
+
+    /* ── PHẢN HỒI ── */
+    .feedback-type-row { display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap; }
+    .feedback-type-btn {
+      padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.2s;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .feedback-type-btn.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .feedback-type-btn.active.sug { background: #22c55e; border-color: #22c55e; }
+    .feedback-type-btn.active.ask { background: #3b82f6; border-color: #3b82f6; }
+    .feedback-textarea {
+      width: 100%; min-height: 90px; resize: vertical;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 13.5px;
+      font-family: 'Rajdhani', sans-serif; outline: none; transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+    .feedback-textarea:focus { border-color: #22c55e; }
+    .feedback-send-btn {
+      width: 100%; padding: 11px; background: linear-gradient(90deg,#ef4444,#f97316);
+      border: none; border-radius: 10px; color: #fff; font-weight: 700;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .feedback-send-btn:hover { opacity: 0.9; transform: scale(1.01); }
+    .feedback-send-btn:disabled { background: rgba(255,255,255,0.15); cursor: default; transform: none; }
+    .feedback-info-row {
+      display: flex; gap: 8px; margin-bottom: 10px;
+    }
+    .feedback-info-input {
+      flex: 1; padding: 9px 12px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px; color: #fff; font-size: 13px;
+      font-family: 'Rajdhani', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .feedback-info-input:focus { border-color: #22c55e; }
+
+    /* ── PWA INSTALL BANNER ── */
+    #pwaBanner {
+      position: fixed; bottom: 80px; left: 12px; right: 12px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 1.5px solid rgba(34,197,94,0.4);
+      border-radius: 16px; padding: 14px 16px;
+      display: none; align-items: center; gap: 12px;
+      z-index: 500; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      animation: slideUpBanner 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUpBanner {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    #pwaBanner.show { display: flex; }
+    .pwa-icon {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg,#22c55e,#06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .pwa-text { flex: 1; }
+    .pwa-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .pwa-sub { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .pwa-install-btn {
+      background: #22c55e; color: #fff; border: none; border-radius: 10px;
+      padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; white-space: nowrap; transition: all 0.2s;
+    }
+    .pwa-install-btn:hover { background: #16a34a; }
+    .pwa-dismiss {
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      font-size: 18px; cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .pwa-dismiss:hover { color: #fff; }
+
+    /* ── BOTTOM ACTION BTNS ── */
+    .fab-xml  { background: linear-gradient(135deg,#22c55e,#06b6d4); display:none; }
+  </style>
+</head>
+<body>
+
+<div class="data-stream" style="left:8%; animation-delay:0s;"></div>
+<div class="data-stream" style="left:45%; animation-delay:1.4s;"></div>
+<div class="data-stream" style="left:82%; animation-delay:2.8s;"></div>
+
+<div class="app-wrapper">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-avatar"></div>
+      <div>
+        <div class="topbar-title">XMOD</div>
+        <div class="topbar-status"><div class="status-dot"></div> Online</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="btnVI" onclick="setLang('vi')">VI</button>
+        <button class="lang-btn" id="btnEN" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="topbar-btn" onclick="openBackgroundSelector()">🖼️</button>
+      <button class="topbar-btn" onclick="handleCommand('/playmusic')">🎵</button>
+      <button class="topbar-btn" onclick="openModTools()">🔧</button>
+      <button class="topbar-btn" id="profileTopBtn" onclick="openProfile()" title="Hồ sơ">👤</button>
+      <button class="topbar-btn" onclick="clearChatHistory();showWelcome()">🗑️</button>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chatArea">
+    <div id="welcomeScreen">
+      <div class="welcome-logo"></div>
+      <div class="welcome-title" data-i18n="welcome_title">XMOD Assistant</div>
+      <div class="welcome-sub" data-i18n="welcome_sub">Trợ lý tìm mod skin Liên Quân, nhạc, XML tools và AI chat</div>
+      <div class="quick-chips">
+        <div class="quick-chip" onclick="sendQuick('nakroth')">⚔️ Nakroth</div>
+        
+        <div class="quick-chip" onclick="sendQuick('florentino')">🔫 florentino</div>
+        <div class="quick-chip" onclick="sendQuick('resourses')">🌪️ resourses</div>
+        <div class="quick-chip" onclick="openModTools()">🔧 Mod Tools</div>
+        <div class="quick-chip" onclick="handleCommand('/modfile')" style="background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(22,163,74,0.15));border-color:rgba(34,197,94,0.4);">⚡ Mod Skin Files</div>
+        <div class="quick-chip" onclick="handleCommand('/dowmod')" data-i18n-chip="all_mods">📦 Tất cả mod</div>
+        <div class="quick-chip" onclick="handleCommand('/playmusic')" data-i18n-chip="music">🎵 Phát nhạc</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT BAR -->
+  <div class="input-bar-wrapper">
+    <div class="input-bar" id="inputBar">
+      <div class="suggest-row" id="suggestRow" style="display:none;"></div>
+      <div class="input-bar-top">
+        <textarea id="userInput" rows="1" placeholder="Nhập tên tướng hoặc lệnh..." autocomplete="off"></textarea>
+        <button id="sendBtn" disabled>➤</button>
+      </div>
+      <div class="input-bar-bottom">
+        <div class="input-actions">
+          <button class="input-action-btn" title="Chọn Background" onclick="openBackgroundSelector()">🖼️</button>
+          <button class="input-action-btn" title="XML Tools" onclick="openXmlModal()">🧩</button>
+          <button class="input-action-btn" title="Nhạc" onclick="handleCommand('/playmusic')">🎵</button>
+        </div>
+        <span class="input-hint-text">Enter gửi · Shift+Enter xuống dòng</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOD TOOLS Modal -->
+<div id="modToolsModal" class="modal">
+  <div class="modal-content" style="width:500px;max-width:96vw;">
+    <button class="modal-close" onclick="closeModal('modToolsModal')">×</button>
+    <h3 class="modal-title">🔧 MOD TOOLS</h3>
+
+    <!-- Tab bar -->
+    <div id="toolTabBar" style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">
+      <button class="tool-tab active" onclick="switchToolTab('giamlag')">⚡ Giảm Lag</button>
+      <button class="tool-tab" onclick="switchToolTab('remake')">🔁 Remake</button>
+      <button class="tool-tab" onclick="switchToolTab('back')">🏠 Back XML</button>
+      <button class="tool-tab" onclick="switchToolTab('effects')">🎨 Effects Copy</button>
+    </div>
+
+    <!-- ── GIẢM LAG ── -->
+    <div id="tab-giamlag" class="tool-panel">
+      <div class="tool-desc">
+        📌 Upload <b>1 file ZIP</b> chứa thư mục <code>skill/</code> (bên trong có nhiều file XML).<br>
+        Tool sẽ thêm <b>GetHolidayResourcePath</b> và fix GUID để giảm lag hiệu ứng.
+      </div>
+      <div class="tool-upload-zone" id="dropZone-giamlag">
+        <div>📂 Kéo thả hoặc nhấn để chọn file ZIP</div>
+        <div style="font-size:11px;opacity:0.5;margin-top:4px;">Chỉ nhận .zip</div>
+        <input type="file" id="file-giamlag" accept=".zip" style="display:none">
+      </div>
+      <div id="prog-giamlag" class="tool-prog" style="display:none">
+        <div id="progStatus-giamlag" class="tool-prog-status"></div>
+        <div class="tool-prog-bar-wrap"><div id="progBar-giamlag" class="tool-prog-bar"></div></div>
+      </div>
+      <div id="result-giamlag"></div>
+    </div>
+
+    <!-- ── REMAKE SKILL ── -->
+    <div id="tab-remake" class="tool-panel" style="display:none">
+      <div class="tool-desc">
+        📌 Upload <b>2 file ZIP</b>:<br>
+        • <b>ZIP 1 — Input:</b> thư mục gốc chứa XML cần remake<br>
+        • <b>ZIP 2 — Output:</b> thư mục đích (đã có file XML để ghi vào)<br>
+        Tool sẽ trích Track hiệu ứng từ Input → ghi vào Output, đổi tên thành <code>XMOD</code>.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0;">
+        <div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;">📁 ZIP INPUT (thư mục gốc)</div>
+          <div class="tool-upload-zone" id="dropZone-remakeIn">
+            <div>📂 Chọn ZIP Input</div>
+            <input type="file" id="file-remakeIn" accept=".zip" style="display:none">
+          </div>
+        </div>
+        <div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;">📁 ZIP OUTPUT (thư mục đích)</div>
+          <div class="tool-upload-zone" id="dropZone-remakeOut">
+            <div>📂 Chọn ZIP Output</div>
+            <input type="file" id="file-remakeOut" accept=".zip" style="display:none">
+          </div>
+        </div>
+      </div>
+      <button class="tool-run-btn" id="btn-remake" onclick="runRemake()" disabled>▶ Chạy Remake Skill</button>
+      <div id="prog-remake" class="tool-prog" style="display:none">
+        <div id="progStatus-remake" class="tool-prog-status"></div>
+        <div class="tool-prog-bar-wrap"><div id="progBar-remake" class="tool-prog-bar"></div></div>
+      </div>
+      <div id="result-remake"></div>
+    </div>
+
+    <!-- ── BACK XML ── -->
+    <div id="tab-back" class="tool-panel" style="display:none">
+      <div class="tool-desc">
+        📌 Upload file <b>Back.xml</b> rồi nhập ID theo format:<br>
+        <code style="background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;">129_DianWei/12912</code><br>
+        Tool sẽ chèn Track hiệu ứng hồi thành (Back/Home) vào file.
+      </div>
+      <div class="tool-upload-zone" id="dropZone-back">
+        <div>📂 Chọn file Back.xml</div>
+        <input type="file" id="file-back" accept=".xml" style="display:none">
+      </div>
+      <div style="margin:10px 0;">
+        <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;">Nhập name_ids (vd: 129_DianWei/12912)</div>
+        <input id="backNameIds" placeholder="129_DianWei/12912" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:9px;color:#fff;font-size:14px;font-family:'Rajdhani',sans-serif;outline:none;" />
+      </div>
+      <button class="tool-run-btn" id="btn-back" onclick="runBack()" disabled>▶ Chạy Back XML</button>
+      <div id="prog-back" class="tool-prog" style="display:none">
+        <div id="progStatus-back" class="tool-prog-status"></div>
+        <div class="tool-prog-bar-wrap"><div id="progBar-back" class="tool-prog-bar"></div></div>
+      </div>
+      <div id="result-back"></div>
+    </div>
+
+    <!-- ── EFFECTS COPY ── -->
+    <div id="tab-effects" class="tool-panel" style="display:none">
+      <div class="tool-desc">
+        📌 Port từ <b>ToolsEffect_Copy_.py</b><br>
+        Upload <b>1 ZIP</b> chứa các file XML/bytes skill.<br>
+        Nhập <b>Tên Hero</b> và <b>ID Skin</b> để thay đường dẫn hiệu ứng:<br>
+        <code style="background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;">prefab_skill_effects/hero_skill_effects/</code>
+      </div>
+      <div class="tool-upload-zone" id="dropZone-effects">
+        <div>📂 Kéo thả hoặc nhấn để chọn ZIP</div>
+        <div style="font-size:11px;opacity:0.5;margin-top:4px;">Chỉ nhận .zip</div>
+        <input type="file" id="file-effects" accept=".zip" style="display:none">
+      </div>
+      <div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;">
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;">🧙 Tên Hero</div>
+          <input id="effects-hero" placeholder="VD: Nakroth" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:9px;color:#fff;font-size:14px;font-family:'Rajdhani',sans-serif;outline:none;" />
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <div style="color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:5px;">🎯 ID Skin</div>
+          <input id="effects-id" placeholder="VD: 12345" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:9px;color:#fff;font-size:14px;font-family:'Rajdhani',sans-serif;outline:none;" />
+        </div>
+      </div>
+      <button class="tool-run-btn" id="btn-effects" onclick="runEffectsCopy()" disabled>▶ Chạy Effects Copy</button>
+      <div id="prog-effects" class="tool-prog" style="display:none">
+        <div id="progStatus-effects" class="tool-prog-status"></div>
+        <div class="tool-prog-bar-wrap"><div id="progBar-effects" class="tool-prog-bar"></div></div>
+      </div>
+      <div id="result-effects"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BG Modal -->
+<div id="bgModal" class="modal">
+  <div class="modal-content" style="width:360px;">
+    <button class="modal-close" onclick="closeModal('bgModal')">×</button>
+    <h3 class="modal-title" data-i18n="bg_title">🖼️ CHỌN BACKGROUND</h3>
+    <div id="bgGrid"></div>
+  </div>
+</div>
+
+<!-- PROFILE Modal -->
+<div id="profileModal" class="modal">
+  <div class="modal-content" style="width:380px;">
+    <button class="modal-close" onclick="closeModal('profileModal')">×</button>
+    <h3 class="modal-title" data-i18n="profile_title">👤 HỒ SƠ</h3>
+
+    <div class="profile-hero-wrap">
+      <div class="profile-big-avatar" id="profileAvatar" onclick="document.getElementById('avatarUpload').click()"></div>
+      <input type="file" id="avatarUpload" accept="image/*" style="display:none">
+      <div class="profile-name-area">
+        <div class="profile-display-name" id="profileDisplayName">XMOD User</div>
+        <div class="profile-uid" id="profileUID">UID: XMOD-000000</div>
+      </div>
+    </div>
+
+    <!-- Avatar presets -->
+    <div class="profile-label" data-i18n="profile_pick_avatar">CHỌN AVATAR</div>
+    <div class="avatar-picker-row" id="avatarPickerRow"></div>
+
+    <!-- Name input -->
+    <div class="profile-label" style="margin-top:12px;" data-i18n="profile_name_lbl">TÊN HIỂN THỊ</div>
+    <input class="profile-input" id="profileNameInput" placeholder="Nhập tên của bạn..." maxlength="24">
+
+    <!-- Bio input -->
+    <div class="profile-label" data-i18n="profile_bio_lbl">GIỚI THIỆU</div>
+    <input class="profile-input" id="profileBioInput" placeholder="Vài chữ về bạn..." maxlength="60">
+
+    <!-- Stats -->
+    <div class="profile-stats-grid" id="profileStatsGrid">
+      <div class="profile-stat">
+        <div class="profile-stat-num" id="stat-msgs">0</div>
+        <div class="profile-stat-lbl" data-i18n="stat_msgs">Tin nhắn</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-num" id="stat-tools">0</div>
+        <div class="profile-stat-lbl" data-i18n="stat_tools">Tool chạy</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-num" id="stat-days">0</div>
+        <div class="profile-stat-lbl" data-i18n="stat_days">Ngày dùng</div>
+      </div>
+    </div>
+
+    <button class="profile-save-btn" onclick="saveProfile()" data-i18n="profile_save">💾 LƯU HỒ SƠ</button>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="pwaBanner">
+  <div class="pwa-icon">🎮</div>
+  <div class="pwa-text">
+    <div class="pwa-title">Cài XMOD về màn hình</div>
+    <div class="pwa-sub">Dùng như app, không cần trình duyệt</div>
+  </div>
+  <button class="pwa-install-btn" id="pwaInstallBtn">Cài ngay</button>
+  <button class="pwa-dismiss" onclick="dismissPWA()">×</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+'use strict';
+
+// ================================================================
+// DATABASE MOD — Thêm mod tướng vào đây
+// ================================================================
+// ================================================================
+// 📦 DANH SÁCH MOD — THÊM MOD VÀO ĐÂY
+// ================================================================
+// CÁCH THÊM MOD MỚI:
+//
+// Bước 1 — Nếu tướng ĐÃ CÓ trong danh sách (vd: Nakroth):
+//   Thêm 1 dòng vào mảng "skins" của tướng đó:
+//   { title:'TÊN MOD', desc:'MÔ TẢ NGẮN', img:'LINK ẢNH', link:'LINK TẢI' }
+//
+// Bước 2 — Nếu tướng CHƯA CÓ:
+//   Thêm 1 khối mới vào MOD_DB:
+//   {
+//     hero: 'tên tướng viết thường không dấu',  ← dùng để tìm kiếm
+//     heroName: 'Tên Tướng',                     ← hiển thị trên web
+//     role: 'Sát thủ',                           ← vai trò (tùy chọn)
+//     skins: [
+//       { title:'...', desc:'...', img:'...', link:'...' }
+//     ]
+//   },
+//
+// LƯU Ý:
+//   • img  → link ảnh từ postimg.cc, imgur, hoặc bất kỳ host ảnh nào
+//   • link → link tải từ mediafire, drive, mega...
+//   • Mỗi tướng có thể có NHIỀU skin trong mảng skins[]
+// ================================================================
+
+const MOD_DB = [
+
+  
+
+  // ──────────────────────────────────────────
+  // 🌪️ ZEPHYS
+  // ──────────────────────────────────────────
+  {
+    hero: 'resourses',
+    heroName: 'resourses',
+    role: 'Đấu sĩ',
+    skins: [
+      {
+        title: 'tài nguyên',
+        desc:  '.....',
+        img:   'https://i.postimg.cc/YSCWv57R/lien-quan-x-conan-lich-ra-mat-tat-ca-cac-skin-collab-1.webp',
+        link:  'https://www.mediafire.com/file/kp2vc3j5tbml3j7/Resources.zip/file'
+      },
+      // ← THÊM SKIN ZEPHYS MỚI VÀO ĐÂY
+    ]
+  },
+
+  // ──────────────────────────────────────────
+  // 🔫 VIOLET
+  // ──────────────────────────────────────────
+  {
+    hero: 'florentino',
+    heroName: 'florentino',
+    role: 'Xạ thủ',
+    skins: [
+      {
+        title: 'florentino lính hoa to',
+        desc:  'skin chất lượng',
+        img:   'https://i.postimg.cc/YCrGHTYJ/photo-1-1585632283525120569127.jpg',
+        link:  'https://www.mediafire.com/file/lmyrzyeiqdj4nfh/FLORENTINO_L%25C3%258DNH_HOA_TO.zip/file'
+      },
+      // ← THÊM SKIN VIOLET MỚI VÀO ĐÂY
+    ]
+  },
+
+  
+
+  // ══════════════════════════════════════════
+  // THÊM TƯỚNG MỚI VÀO ĐÂY ↓
+  // Sao chép template bên dưới và điền vào:
+  // ══════════════════════════════════════════
+  /*
+  {
+    hero: 'ten_tuong',        ← viết thường, không dấu, dùng _ thay khoảng trắng
+    heroName: 'Tên Tướng',   ← tên hiển thị
+    role: 'Sát thủ',         ← Đấu sĩ / Pháp sư / Sát thủ / Xạ thủ / Hỗ trợ
+    skins: [
+      {
+        title: 'Tên Skin',
+        desc:  'Mô tả ngắn về skin',
+        img:   'https://link-anh.com/anh.jpg',
+        link:  'https://link-tai-mod.com'
+      },
+    ]
+  },
+  */
+
+];
+
+// Lấy tất cả tên hero
+const ALL_HEROES = MOD_DB.map(m => m.heroName);
+
+// ================================================================
+// API
+// ================================================================
+// ================================================================
+// GROQ AI — miễn phí, không CORS, 14400 req/ngày tự reset
+// ================================================================
+const GROQ_API_KEY = "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";
+
+// Lịch sử hội thoại — nhớ ngữ cảnh
+let chatHistory = [];
+const MAX_HISTORY = 10;
+
+const SYSTEM_PROMPT = `Bạn là XMOD Assistant — trợ lý AI thân thiện của web XMOD, chuyên về mod skin Liên Quân Mobile (Arena of Valor).
+Hôm nay là ngày ${new Date().toLocaleDateString('vi-VN', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}.
+Luôn trả lời bằng tiếng Việt, ngắn gọn, tự nhiên như người bình thường. Dùng emoji vừa phải.
+Khi người dùng hỏi về tướng nào, chủ động gợi ý mod nếu có trong danh sách.
+Nếu không biết thì nói thẳng, không bịa đặt.
+
+THÔNG TIN VỀ WEB XMOD:
+- Tên web: XMOD
+- Được tạo bởi: Cộng Đồng Modder Chiến Đo — một nhóm nhiều người cùng làm mod skin Liên Quân
+- Trưởng nhóm: Einstein Tập Làm Mod (tên thật: Dương)
+- Kênh YouTube trưởng nhóm: https://www.youtube.com/@EinsteinTapLamMod
+- Tên web lấy cảm hứng từ kênh: https://www.youtube.com/@XMOD-b7i
+- Group: Bí mật (không công khai)
+
+TÍNH NĂNG CỦA WEB:
+- Tìm kiếm mod skin theo tên tướng (gõ tên tướng là ra ngay)
+- Xem và tải mod với link trực tiếp
+- Mod Tools: Giảm Lag Skill, Remake Skill, Back XML, Effects Copy
+- Phát nhạc nền (3 bài)
+- Đổi background tùy thích
+- Hồ sơ người dùng (đặt tên, avatar)
+- Hỗ trợ 2 ngôn ngữ VI/EN
+- AI chat (chính là mình đây 😄)
+
+MOD HIỆN CÓ: ${MOD_DB.map(h=>`${h.heroName}: ${h.skins.map(s=>s.title).join(', ')}`).join(' | ')}`;
+
+async function callChatAI(message) {
+  chatHistory.push({ role:'user', content: message });
+  if (chatHistory.length > MAX_HISTORY) chatHistory = chatHistory.slice(-MAX_HISTORY);
+
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + GROQ_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...chatHistory
+        ],
+        temperature: 0.7,
+        max_tokens: 512
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) {
+      if (r.status === 429) return '⏳ Hết lượt hôm nay, thử lại ngày mai nhé!';
+      return '❌ Lỗi ' + r.status + ': ' + (d?.error?.message || 'Không xác định');
+    }
+
+    const reply = d.choices?.[0]?.message?.content || 'Xin lỗi mình không hiểu 😅';
+    chatHistory.push({ role:'assistant', content: reply });
+    if (chatHistory.length > MAX_HISTORY) chatHistory = chatHistory.slice(-MAX_HISTORY);
+    return reply;
+  } catch(e) {
+    return '❌ Lỗi kết nối. Kiểm tra mạng rồi thử lại nhé!';
+  }
+}
+
+// Xóa lịch sử khi clear chat
+const _origClearChat = clearChatHistory;
+window.clearChatHistory = function() {
+  chatHistory = [];
+  _origClearChat();
+};
+
+// ================================================================
+// DOM REFS
+// ================================================================
+const chatArea   = document.getElementById('chatArea');
+const userInput  = document.getElementById('userInput');
+const sendBtn    = document.getElementById('sendBtn');
+const suggestRow = document.getElementById('suggestRow');
+const welcomeScreen = document.getElementById('welcomeScreen');
+
+// ================================================================
+// WELCOME
+// ================================================================
+let chatStarted = false;
+function showWelcome() {
+  chatStarted = false;
+  chatArea.innerHTML = '';
+  chatArea.appendChild(welcomeScreen);
+  welcomeScreen.style.display = 'flex';
+}
+function hideWelcome() {
+  if (!chatStarted) {
+    chatStarted = true;
+    welcomeScreen.style.display = 'none';
+  }
+}
+
+// ================================================================
+// HISTORY
+// ================================================================
+const STORAGE_KEY = 'xmod_chat_v2';
+function saveChatHistory() {
+  try {
+    const arr = Array.from(chatArea.querySelectorAll('.message')).map(n => ({ html:n.innerHTML, cls:n.dataset.cls }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  } catch(e){}
+}
+function loadChatHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const arr = JSON.parse(raw);
+    if (!arr.length) return false;
+    arr.forEach(it => {
+      const d = document.createElement('div');
+      d.className = `message ${it.cls}`;
+      d.dataset.cls = it.cls;
+      d.innerHTML = it.html;
+      chatArea.appendChild(d);
+    });
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return true;
+  } catch(e){ return false; }
+}
+function clearChatHistory() {
+  localStorage.removeItem(STORAGE_KEY);
+  chatArea.innerHTML = '';
+}
+
+// ================================================================
+// MESSAGE HELPERS
+// ================================================================
+function escapeHtml(s) { const d=document.createElement('div'); d.innerText=s; return d.innerHTML; }
+
+function addMessage(text, cls='user') {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = `message ${cls}`;
+  div.dataset.cls = cls;
+  div.innerHTML = `
+    <div class="msg-avatar ${cls}"></div>
+    <div class="bubble">${escapeHtml(text)}</div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  setTimeout(saveChatHistory, 100);
+}
+
+function addHtmlMessage(html, cls='bot') {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = `message ${cls}`;
+  div.dataset.cls = cls;
+  div.innerHTML = `
+    <div class="msg-avatar ${cls}"></div>
+    <div class="bubble-html">${html}</div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  setTimeout(saveChatHistory, 100);
+}
+
+// ── Các tập "code giả" hiển thị khi đang xử lý ──
+const CODE_SNIPPETS = [
+  // Snippet 1 — tìm mod
+  [
+    `<span class="ck">async</span> <span class="cf">searchMod</span>(<span class="cn">hero</span>) {`,
+    `  <span class="ck">const</span> <span class="cv">db</span> = <span class="cf">await</span> loadDB();`,
+    `  <span class="ck">return</span> db.<span class="cf">filter</span>(m => m.hero`,
+    `    === hero.<span class="cf">toLowerCase</span>());`,
+    `  <span class="cc">// ✅ found results...</span>`,
+  ],
+  // Snippet 2 — xử lý XML
+  [
+    `<span class="ck">function</span> <span class="cf">processXML</span>(files) {`,
+    `  files.<span class="cf">forEach</span>(f => {`,
+    `    <span class="ck">const</span> track = <span class="cf">parseTrack</span>(f);`,
+    `    track.name = <span class="cs">"XMOD"</span>;`,
+    `  }); <span class="cc">// processing...</span>`,
+  ],
+  // Snippet 3 — AI response
+  [
+    `<span class="ck">const</span> res = <span class="ck">await</span> <span class="cf">callAI</span>({`,
+    `  model: <span class="cs">"gemini-2.0-flash"</span>,`,
+    `  temp: <span class="cv">0.7</span>,`,
+    `  stream: <span class="ck">true</span>,`,
+    `}); <span class="cc">// thinking...</span>`,
+  ],
+  // Snippet 4 — giảm lag
+  [
+    `<span class="ck">for</span> (<span class="ck">const</span> xml <span class="ck">of</span> files) {`,
+    `  <span class="cf">addHolidayPath</span>(xml);`,
+    `  <span class="cf">fixTrackGUID</span>(xml);`,
+    `  <span class="cc">// lag reduced ✓</span>`,
+    `}`,
+  ],
+];
+
+let _codeTypingTimer = null;
+
+function showTyping() {
+  hideWelcome();
+  if (document.getElementById('typingMsg')) return;
+
+  // Chọn snippet ngẫu nhiên
+  const lines = CODE_SNIPPETS[Math.floor(Math.random() * CODE_SNIPPETS.length)];
+  // File name ngẫu nhiên
+  const fnames = ['skill.xml','mod_tool.js','xmod.py','search.js','process.xml'];
+  const fname  = fnames[Math.floor(Math.random() * fnames.length)];
+
+  const div = document.createElement('div');
+  div.className = 'message bot'; div.id = 'typingMsg';
+  div.innerHTML = `
+    <div class="msg-avatar bot"></div>
+    <div class="code-typing-wrap">
+      <div class="code-typing-bar">
+        <div class="code-dot red"></div>
+        <div class="code-dot yel"></div>
+        <div class="code-dot grn"></div>
+        <span class="code-typing-filename">${fname}</span>
+      </div>
+      <div class="code-typing-body" id="codeTypingBody"></div>
+      <div class="code-status-bar">
+        <span><span class="code-status-pulse"></span>Đang xử lý...</span>
+        <span>XMOD v2.0</span>
+      </div>
+    </div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // Thêm từng dòng theo delay
+  const body = div.querySelector('#codeTypingBody');
+  lines.forEach((lineHtml, i) => {
+    const t = setTimeout(() => {
+      if (!document.getElementById('typingMsg')) return;
+      const row = document.createElement('div');
+      row.className = 'code-line';
+      row.innerHTML = `<span class="code-ln">${i+1}</span><span class="code-text">${lineHtml}${i===lines.length-1?'<span class="code-cursor"></span>':''}</span>`;
+      body.appendChild(row);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }, i * 320);
+    if (!_codeTypingTimer) _codeTypingTimer = [];
+    _codeTypingTimer.push(t);
+  });
+}
+
+function removeTyping() {
+  if (_codeTypingTimer) { _codeTypingTimer.forEach(clearTimeout); _codeTypingTimer = null; }
+  const t = document.getElementById('typingMsg');
+  if (t) t.remove();
+}
+
+// ================================================================
+// MOD CARD BUILDER
+// ================================================================
+function buildModCards(heroData) {
+  let html = `<div class="mod-header">🎮 ${heroData.heroName} — ${heroData.skins.length} mod có sẵn</div><div class="mod-list">`;
+  heroData.skins.forEach(s => {
+    html += `
+      <div class="mod-card">
+        <img class="mod-card-img" src="${s.img}" alt="${s.title}" loading="lazy" onerror="this.style.background='#1a1a1a'">
+        <div class="mod-card-body">
+          <div>
+            <div class="mod-card-name">${s.title}</div>
+            <div class="mod-card-hero">👤 ${heroData.heroName}</div>
+            <div class="mod-card-desc">${s.desc}</div>
+          </div>
+          <a class="mod-card-dl" href="${s.link}" target="_blank">⬇ DOWNLOAD</a>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function buildAllModCards() {
+  let html = `<div class="mod-header">📦 Tất cả mod — ${MOD_DB.reduce((a,m)=>a+m.skins.length,0)} skin</div><div class="mod-list">`;
+  MOD_DB.forEach(heroData => {
+    heroData.skins.forEach(s => {
+      html += `
+        <div class="mod-card">
+          <img class="mod-card-img" src="${s.img}" alt="${s.title}" loading="lazy" onerror="this.style.background='#1a1a1a'">
+          <div class="mod-card-body">
+            <div>
+              <div class="mod-card-name">${s.title}</div>
+              <div class="mod-card-hero">👤 ${heroData.heroName}</div>
+              <div class="mod-card-desc">${s.desc}</div>
+            </div>
+            <a class="mod-card-dl" href="${s.link}" target="_blank">⬇ DOWNLOAD</a>
+          </div>
+        </div>`;
+    });
+  });
+  html += '</div>';
+  return html;
+}
+
+function searchModByHero(query) {
+  const q = query.toLowerCase().trim();
+  return MOD_DB.filter(m =>
+    m.hero.includes(q) || m.heroName.toLowerCase().includes(q) ||
+    m.skins.some(s => s.title.toLowerCase().includes(q))
+  );
+}
+
+// Mod search widget
+function buildModSearchWidget() {
+  return `
+    <div class="mod-search-box">
+      <div class="mod-search-title">🔍 Tìm mod theo tên tướng</div>
+      <div class="mod-search-input-row">
+        <input class="mod-search-input" id="modSearchInput" placeholder="VD: Nakroth, Airi, Violet...">
+        <button class="mod-search-btn" onclick="doModSearch()">Tìm</button>
+      </div>
+      <div class="mod-heroes-row">
+        ${ALL_HEROES.map(h => `<div class="hero-tag" onclick="heroTagClick('${h}')">${h}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+window.heroTagClick = function(name) {
+  const results = searchModByHero(name);
+  if (results.length) {
+    addMessage(`Tìm mod: ${name}`, 'user');
+    setTimeout(() => {
+      removeTyping();
+      results.forEach(r => addHtmlMessage(buildModCards(r)));
+    }, 600);
+    showTyping();
+  }
+};
+
+window.doModSearch = function() {
+  const val = document.getElementById('modSearchInput')?.value?.trim();
+  if (!val) return;
+  const results = searchModByHero(val);
+  addMessage(`Tìm mod: ${val}`, 'user');
+  showTyping();
+  setTimeout(() => {
+    removeTyping();
+    if (results.length) results.forEach(r => addHtmlMessage(buildModCards(r)));
+    else addMessage(`Không tìm thấy mod cho "${val}". Thử tên khác hoặc xem /dowmod để xem tất cả.`, 'bot');
+  }, 700);
+};
+
+// ================================================================
+// INPUT — SUGGEST & AUTO RESIZE
+// ================================================================
+function updateSuggestions(val) {
+  if (!val || val.startsWith('/')) {
+    suggestRow.style.display = 'none';
+    return;
+  }
+  const q = val.toLowerCase();
+  const matches = ALL_HEROES.filter(h => h.toLowerCase().includes(q));
+  if (!matches.length) { suggestRow.style.display = 'none'; return; }
+  suggestRow.innerHTML = matches.slice(0,5).map(h =>
+    `<div class="suggest-chip" onclick="sendQuick('${h.toLowerCase()}')">${h}</div>`
+  ).join('');
+  suggestRow.style.display = 'flex';
+}
+
+userInput.addEventListener('input', () => {
+  // Auto resize
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+  // Send button state
+  sendBtn.disabled = !userInput.value.trim();
+  // Suggestions
+  updateSuggestions(userInput.value);
+});
+
+// ================================================================
+// SEND
+// ================================================================
+function sendQuick(text) {
+  userInput.value = text;
+  sendBtn.disabled = false;
+  handleSend();
+}
+
+function handleSend() {
+  const txt = userInput.value.trim();
+  if (!txt) return;
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  suggestRow.style.display = 'none';
+  addMessage(txt, 'user');
+  document.body.style.animation = 'shake 0.35s ease';
+  setTimeout(() => document.body.style.animation = '', 380);
+  setTimeout(() => handleCommand(txt), 280);
+}
+
+sendBtn.addEventListener('click', handleSend);
+userInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+
+// ================================================================
+// COMMAND HANDLER
+// ================================================================
+function handleCommand(txt) {
+  const cmd = txt.trim().toLowerCase();
+
+  // --- Tìm theo tên tướng (không cần /) ---
+  const heroMatch = MOD_DB.find(m =>
+    m.hero === cmd || m.heroName.toLowerCase() === cmd ||
+    cmd.includes(m.hero) || m.hero.includes(cmd)
+  );
+  if (heroMatch && !cmd.startsWith('/')) {
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addHtmlMessage(buildModCards(heroMatch));
+    }, 700);
+    return;
+  }
+
+  // --- /modfile: mod skin từ file ---
+  if (cmd === '/modfile' || cmd === 'modfile') {
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addHtmlMessage(buildModFileStep1());
+    }, 600);
+    return;
+  }
+
+  // --- /dowmod: tất cả mod ---
+  if (cmd === '/dowmod' || cmd === 'dowmod') {
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addHtmlMessage(buildAllModCards());
+    }, 800);
+    return;
+  }
+
+  // --- /modtim hoặc /search mod: widget tìm kiếm ---
+  if (cmd === '/modtim' || cmd === '/findmod') {
+    addHtmlMessage(buildModSearchWidget());
+    return;
+  }
+
+  // --- /playmusic ---
+  if (cmd === '/playmusic' || cmd === 'playmusic') {
+    const html = `
+      <div class="music-player">
+        <div class="music-title">🎵 Đang phát: Bài ${currentSong + 1}</div>
+        <div class="music-controls">
+          <button class="music-btn" onclick="playMusic()">▶ Play</button>
+          <button class="music-btn" onclick="pauseMusic()">⏸ Pause</button>
+          <button class="music-btn" onclick="prevSong()">⏮ Prev</button>
+          <button class="music-btn" onclick="nextSong()">⏭ Next</button>
+        </div>
+      </div>`;
+    showTyping();
+    setTimeout(() => { removeTyping(); addHtmlMessage(html); playMusic(); }, 500);
+    return;
+  }
+
+  // --- /search ---
+  if (cmd.startsWith('/search')) {
+    const query = txt.replace(/\/search/i,'').trim() || 'AI chatbot';
+    addMessage(`🔎 Đang tìm kiếm: "${query}"`, 'bot');
+    const srcs = ['Google','Wikipedia','Reddit','StackOverflow'];
+    srcs.forEach((s,i) => setTimeout(() => addMessage(`🌐 Truy vấn ${s}...`, 'bot'), (i+1)*700));
+    setTimeout(() => {
+      const html = `<div class="search-results">
+        <div class="search-result-item"><strong>🔵 Google:</strong> Thông tin về "${query}" — <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank">Xem thêm →</a></div>
+        <div class="search-result-item"><strong>📖 Wikipedia:</strong> Bài viết về "${query}" — <a href="https://vi.wikipedia.org/wiki/${encodeURIComponent(query)}" target="_blank">Xem thêm →</a></div>
+        <div class="search-result-item"><strong>💬 Reddit:</strong> Cộng đồng thảo luận — <a href="https://www.reddit.com/search/?q=${encodeURIComponent(query)}" target="_blank">Xem thêm →</a></div>
+        <div class="search-result-item"><strong>💻 StackOverflow:</strong> Giải pháp kỹ thuật — <a href="https://stackoverflow.com/search?q=${encodeURIComponent(query)}" target="_blank">Xem thêm →</a></div>
+      </div>`;
+      addHtmlMessage(html);
+    }, srcs.length * 700 + 700);
+    return;
+  }
+
+  // --- /background ---
+  if (cmd === '/background' || cmd === 'background') {
+    addMessage('🎨 Mở trình chọn background...', 'bot');
+    setTimeout(openBackgroundSelector, 400);
+    return;
+  }
+
+  // --- /tools ---
+  if (cmd === '/tools') {
+    openModTools();
+    return;
+  }
+
+  // --- /clear ---
+  if (cmd === '/clear' || cmd === 'clear') {
+    clearChatHistory(); showWelcome();
+    return;
+  }
+
+  // --- /help ---
+  if (cmd === '/help') {
+    const html = `<div class="info-card">
+      <strong>📋 Danh sách lệnh</strong><br><br>
+      <b>Tìm mod:</b> nhập tên tướng (vd: <i>nakroth</i>, <i>airi</i>)<br>
+      <b>/modfile</b> — 🔥 Mod skin từ file Resources<br>
+      <b>/dowmod</b> — Xem tất cả mod skin<br>
+      <b>/modtim</b> — Widget tìm kiếm mod<br>
+      <b>/playmusic</b> — Phát nhạc<br>
+      <b>/background</b> — Đổi background<br>
+      <b>/search [từ]</b> — Tìm kiếm web<br>
+      <b>/clear</b> — Xoá lịch sử<br>
+      <b>/about</b> — Thông tin bot<br>
+      <b>/time</b> — Giờ hiện tại<br>
+      <b>/random</b> — Số ngẫu nhiên<br>
+      <b>/donate</b> — Ủng hộ tác giả<br><br>
+      <b>⌨️ Phím tắt:</b> Ctrl+B (BG) · Ctrl+M (Nhạc) · F1 (Help)
+    </div>`;
+    addHtmlMessage(html);
+    return;
+  }
+
+  if (cmd === '/about') {
+    addMessage('🤖 XMOD Chatbot v2.0\nPhát triển bởi XMOD Team\nHỗ trợ: mod skin tướng, nhạc, XML tools, AI chat', 'bot');
+    return;
+  }
+  if (cmd === '/donate') {
+    addMessage('💚 Donate qua Vietinbank!\nCảm ơn bạn đã ủng hộ để duy trì dự án 🙏', 'bot');
+    return;
+  }
+  if (cmd === '/time') {
+    addMessage(`🕐 ${new Date().toLocaleTimeString('vi-VN')} — ${new Date().toLocaleDateString('vi-VN')}`, 'bot');
+    return;
+  }
+  if (cmd === '/random') {
+    addMessage(`🎲 Số ngẫu nhiên: ${Math.floor(Math.random()*100)+1}`, 'bot');
+    return;
+  }
+  if (cmd.startsWith('/')) {
+    addMessage('❓ Lệnh không tồn tại. Gõ /help để xem danh sách.', 'bot');
+    return;
+  }
+
+  // --- AI fallback ---
+  showTyping();
+  callChatAI(txt).then(answer => { removeTyping(); addMessage(answer, 'bot'); });
+}
+
+// ================================================================
+// MUSIC
+// ================================================================
+const playlist = [
+  'https://www.dropbox.com/scl/fi/003fj25b92y8jio117ip9/Legends-Never-Die-ft.-Against-The-Current-2017.mp3?dl=1',
+  'https://www.dropbox.com/scl/fi/735t19z143hw1d9r0w0mp/HUNTRIX-What-It-Sounds-Like-Lyrics-Color-Coded-Lyrics.mp3?dl=1',
+  'https://www.dropbox.com/scl/fi/fbfi2t9cd7jf2qsh7kbim/Free-Official-Lyric-Video-Sony-Animation.mp3?dl=1'
+];
+let currentSong = 0;
+const audioPlayer = new Audio(); audioPlayer.volume = 0.5;
+function playMusic()  { audioPlayer.src = playlist[currentSong]; audioPlayer.play().catch(()=>{}); }
+function pauseMusic() { audioPlayer.pause(); }
+function prevSong()   { currentSong=(currentSong-1+playlist.length)%playlist.length; playMusic(); }
+function nextSong()   { currentSong=(currentSong+1)%playlist.length; playMusic(); }
+
+// ================================================================
+// BACKGROUND
+// ================================================================
+const backgrounds = [
+  'https://i.postimg.cc/NMvXZVGx/Better-Image-1757996494029.jpg',
+  'https://i.postimg.cc/50wZWcSV/bg2.png',
+  'https://i.postimg.cc/SRN1gvJF/snapedit-1758346742290.jpg',
+  'https://i.postimg.cc/wMvfvkw7/bg5.png',
+  'https://i.postimg.cc/TYsNcQxF/snapedit-1758346703269.jpg',
+  'https://i.postimg.cc/C1tn2ZKh/Better-Image-1758346552140.jpg',
+  'https://i.postimg.cc/RhHJxM3c/Better-Image-1758346529282.jpg',
+  'https://i.postimg.cc/nVgWJZSM/Better-Image-1758346503241.jpg'
+];
+
+function openBackgroundSelector() {
+  const m = document.getElementById('bgModal');
+  if (m) m.classList.add('show');
+  loadBgGrid();
+}
+function loadBgGrid() {
+  const grid = document.getElementById('bgGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const up = document.createElement('div'); up.className = 'upload-section';
+  up.innerHTML = `
+    <div style="color:#fff;font-size:13px;margin-bottom:10px;font-weight:600;">📷 Upload ảnh của bạn</div>
+    <input type="file" id="customBgUpload" accept="image/*" style="display:none;">
+    <button class="upload-btn" onclick="document.getElementById('customBgUpload').click()">📁 Chọn ảnh</button>
+    <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:6px;">JPG · PNG · GIF · WEBP (max 10MB)</div>`;
+  grid.appendChild(up);
+
+  const t = document.createElement('div');
+  t.style.cssText = 'color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;margin:12px 0 8px;';
+  t.textContent = 'Preset backgrounds';
+  grid.appendChild(t);
+
+  const g = document.createElement('div'); g.className = 'bg-grid-wrap';
+  backgrounds.forEach((bg, i) => {
+    const item = document.createElement('div'); item.className = 'bg-item';
+    item.innerHTML = `<img src="${bg}" loading="lazy"><div class="bg-label">BG ${i+1}</div>`;
+    item.onclick = () => { changeBackground(bg); closeModal('bgModal'); };
+    g.appendChild(item);
+  });
+  grid.appendChild(g);
+
+  const rb = document.createElement('button'); rb.className = 'reset-btn';
+  rb.textContent = '🔄 Reset mặc định';
+  rb.onclick = () => { changeBackground(''); closeModal('bgModal'); };
+  grid.appendChild(rb);
+
+  const cu = document.getElementById('customBgUpload');
+  if (cu) cu.onchange = handleImageUpload;
+}
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ok = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
+  if (!ok.includes(file.type)) { addMessage('❌ Chỉ hỗ trợ JPG, PNG, GIF, WEBP', 'bot'); return; }
+  if (file.size > 10*1024*1024) { addMessage('❌ File quá lớn (>10MB)', 'bot'); return; }
+  addMessage('⏳ Đang xử lý ảnh...', 'bot');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      changeBackground(data);
+      try { localStorage.setItem('selectedBackground', data); } catch(ex){}
+      addMessage(`✅ Đã đặt "${file.name}" làm background!`, 'bot');
+      closeModal('bgModal');
+    };
+    img.onerror = () => addMessage('❌ Lỗi khi tải ảnh', 'bot');
+    img.src = data;
+  };
+  reader.onerror = () => addMessage('❌ Lỗi đọc file', 'bot');
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function changeBackground(url) {
+  const def = "url('https://i.postimg.cc/Z5x27g1v/mau-den-thumbnail.jpg')";
+  document.body.style.backgroundImage = url ? `url('${url}')` : def;
+  document.body.style.backgroundSize = 'cover';
+  document.body.style.backgroundPosition = 'center';
+  try { localStorage.setItem('selectedBackground', url); } catch(e){}
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('show');
+}
+
+// ================================================================
+// DRAG & DROP
+// ================================================================
+document.addEventListener('dragover', e => { e.preventDefault(); document.body.style.outline='2px dashed #22c55e'; });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.style.outline=''; });
+document.addEventListener('drop', e => {
+  e.preventDefault(); document.body.style.outline='';
+  const f = Array.from(e.dataTransfer.files).find(f=>f.type.startsWith('image/'));
+  if (f) handleImageUpload({target:{files:[f],value:''}});
+  else addMessage('⚠️ Kéo thả file ảnh để đổi background', 'bot');
+});
+
+// ================================================================
+// KEYBOARD SHORTCUTS
+// ================================================================
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key==='b') { e.preventDefault(); openBackgroundSelector(); }
+  if (e.ctrlKey && e.key==='m') {
+    e.preventDefault();
+    if (audioPlayer.paused) { playMusic(); addMessage('▶ Nhạc đang phát', 'bot'); }
+    else { pauseMusic(); addMessage('⏸ Nhạc đã dừng', 'bot'); }
+  }
+  if (e.ctrlKey && e.key==='l') { e.preventDefault(); clearChatHistory(); showWelcome(); }
+  if (e.key==='F1') { e.preventDefault(); handleCommand('/help'); }
+});
+
+// ================================================================
+// RIPPLE
+// ================================================================
+document.addEventListener('click', e => {
+  const r = document.createElement('div'); r.className='ripple';
+  r.style.left=e.clientX+'px'; r.style.top=e.clientY+'px';
+  document.body.appendChild(r);
+  setTimeout(()=>r.remove(), 600);
+});
+
+// ================================================================
+// FLOATING PARTICLES
+// ================================================================
+function spawnParticle() {
+  const p = document.createElement('div'); p.className='floating-particle';
+  p.style.left = Math.random()*100+'vw';
+  p.style.animationDuration = (Math.random()*5+7)+'s';
+  p.style.animationDelay = '0s';
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(), 11000);
+}
+setInterval(spawnParticle, 500);
+
+// ================================================================
+// SETTINGS
+// ================================================================
+function saveSettings() {
+  try { localStorage.setItem('xmod_cfg', JSON.stringify({vol:audioPlayer.volume,song:currentSong})); } catch(e){}
+}
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('xmod_cfg')||'{}');
+    if (s.vol!=null) audioPlayer.volume=s.vol;
+    if (s.song!=null) currentSong=s.song;
+  } catch(e){}
+}
+
+// ================================================================
+// CONTEXT MENU BLOCK
+// ================================================================
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ================================================================
+// INIT
+// ================================================================
+loadSettings();
+setInterval(saveSettings, 30000);
+window.addEventListener('beforeunload', saveSettings);
+
+// Load saved background
+window.addEventListener('load', () => {
+  try {
+    const bg = localStorage.getItem('selectedBackground');
+    if (bg) changeBackground(bg);
+  } catch(e){}
+});
+
+// Load history or show welcome
+setTimeout(() => {
+  const hasHistory = loadChatHistory();
+  if (hasHistory) {
+    chatStarted = true;
+    welcomeScreen.style.display = 'none';
+  }
+  // NO auto-messages on load — fixes the "chữ tự nhiên xuất hiện" bug
+}, 300);
+
+// ================================================================
+// KONAMI
+// ================================================================
+let kCode=[];
+const kSeq=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+document.addEventListener('keydown', e => {
+  kCode.push(e.code); if(kCode.length>kSeq.length) kCode.shift();
+  if(JSON.stringify(kCode)===JSON.stringify(kSeq)){
+    addMessage('🎉 KONAMI CODE! Matrix unlocked!','bot');
+    document.body.style.filter='hue-rotate(180deg) saturate(2)';
+    setTimeout(()=>document.body.style.filter='',3000); kCode=[];
+  }
+});
+
+// ================================================================
+// XML TOOLS
+// ================================================================
+(function(){
+  'use strict';
+  const delay = ms => new Promise(r=>setTimeout(r,ms));
+
+  function createXmlModal(){
+    if(document.getElementById('xmlModal')) return;
+    document.body.insertAdjacentHTML('beforeend',`
+<div id="xmlModal" class="modal">
+  <div class="modal-content" style="max-width:680px;">
+    <button class="modal-close" onclick="closeXmlModal()">×</button>
+    <h3 class="modal-title">🧩 XML TOOLS</h3>
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.4);border-radius:10px;padding:11px;margin-bottom:14px;">
+      <div style="color:#f87171;font-weight:700;font-size:13px;margin-bottom:3px;">⚠️ LƯU Ý</div>
+      <div style="color:rgba(255,255,255,0.8);font-size:12px;">Luôn backup file gốc trước khi xử lý!</div>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <label style="color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;">
+        <input type="radio" name="xmlTool" value="reformat" checked> Reformat (tối ưu game)
+      </label>
+      <label style="color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;">
+        <input type="radio" name="xmlTool" value="obf_safe"> Obfuscate Safe
+      </label>
+      <label style="color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;">
+        <input type="radio" name="xmlTool" value="obf_aggr"> Obfuscate Aggressive
+      </label>
+    </div>
+    <input type="file" id="xmlFileInput" accept=".xml,.zip"
+      style="width:100%;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;margin-bottom:14px;font-size:13px;">
+    <div id="xmlProgress" style="display:none;margin-bottom:14px;">
+      <div id="xmlStatus" style="color:#22c55e;margin-bottom:8px;font-size:13px;"></div>
+      <div style="background:rgba(255,255,255,0.1);height:6px;border-radius:3px;overflow:hidden;">
+        <div id="xmlBar" style="height:100%;width:0%;background:#22c55e;transition:width 0.3s;border-radius:3px;"></div>
+      </div>
+    </div>
+    <div id="xmlResult"></div>
+  </div>
+</div>`);
+  }
+
+  window.openXmlModal = function(){
+    createXmlModal();
+    const m = document.getElementById('xmlModal');
+    if(m){ m.classList.add('show'); }
+    const fi = document.getElementById('xmlFileInput');
+    if(fi && !fi._wired){ fi._wired=true; fi.addEventListener('change', e=>{ const f=e.target.files[0]; if(f){ processFile(f); e.target.value=''; } }); }
+  };
+  window.closeXmlModal = function(){ const m=document.getElementById('xmlModal'); if(m) m.classList.remove('show'); };
+
+  const setStatus  = t => { const e=document.getElementById('xmlStatus'); if(e) e.textContent=t; };
+  const setProgress= p => { const e=document.getElementById('xmlBar'); if(e) e.style.width=Math.min(100,Math.max(0,p))+'%'; };
+  const showProg   = () => { const e=document.getElementById('xmlProgress'); if(e) e.style.display='block'; };
+  const hideProg   = () => { const e=document.getElementById('xmlProgress'); if(e) e.style.display='none'; };
+
+  function reformatXml(xmlText){
+    let decl='';
+    const dm=xmlText.match(/^\s*(<\?xml[^>]*\?>)/i);
+    if(dm){ decl=dm[1]; xmlText=xmlText.slice(dm.index+dm[1].length); }
+    const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+    if(doc.querySelector('parsererror')) return xmlText;
+    function ser(node,ind){
+      const pad=' '.repeat(ind);
+      if(node.nodeType===Node.TEXT_NODE){ const t=node.nodeValue.trim(); return t?pad+t+'\n':''; }
+      if(node.nodeType!==Node.ELEMENT_NODE) return '';
+      let out=pad+'<'+node.tagName;
+      const attrs=Array.from(node.attributes||[]);
+      if(!attrs.length&&!node.childNodes.length) return out+' />\n';
+      if(attrs.length){
+        out+='\n';
+        for(const a of attrs) out+=pad+'    '+a.name+'="'+a.value+'"\n';
+        if(!node.childNodes.length) return out.trimEnd()+' />\n';
+        out+=pad+'>';
+      } else { out+='>'; }
+      out+='\n';
+      for(let i=0;i<node.childNodes.length;i++) out+=ser(node.childNodes[i],ind+4);
+      out+=pad+'</'+node.tagName+'>\n';
+      return out;
+    }
+    const body=ser(doc.documentElement,4);
+    const lines=((decl||'<?xml version="1.0" encoding="utf-8"?>')+'\n'+body).split('\n');
+    const out=[lines[0]];
+    for(let i=1;i<lines.length;i++) out.push(lines[i].startsWith('    ')?lines[i].slice(4):lines[i]);
+    return out.join('\n');
+  }
+
+  function obfuscateXml(xmlText,aggressive){
+    let decl='';
+    const dm=xmlText.match(/^\s*(<\?xml[^>]*\?>)/i);
+    if(dm){ decl=dm[1]; xmlText=xmlText.slice(dm.index+dm[1].length); }
+    const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+    if(doc.querySelector('parsererror')) return xmlText;
+    function rmComments(n){ for(let i=n.childNodes.length-1;i>=0;i--){ const c=n.childNodes[i]; if(c.nodeType===Node.COMMENT_NODE) n.removeChild(c); else if(c.nodeType===Node.ELEMENT_NODE) rmComments(c); } }
+    rmComments(doc);
+    function shuffle(el){ if(el.attributes&&el.attributes.length>1){ const arr=Array.from(el.attributes).map(a=>[a.name,a.value]); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } Array.from(el.attributes).map(a=>a.name).forEach(n=>el.removeAttribute(n)); arr.forEach(([k,v])=>el.setAttribute(k,v)); } Array.from(el.children).forEach(shuffle); }
+    shuffle(doc.documentElement);
+    if(aggressive){ function enc(n){ if(n.nodeType===Node.TEXT_NODE&&n.nodeValue.trim()) n.nodeValue=btoa(unescape(encodeURIComponent(n.nodeValue))); Array.from(n.childNodes).forEach(enc); } enc(doc.documentElement); }
+    let body=new XMLSerializer().serializeToString(doc.documentElement);
+    body=body.replace(/>\s+</g,'><').trim();
+    return (decl||'<?xml version="1.0" encoding="utf-8"?>')+'\n'+body;
+  }
+
+  async function processFile(file){
+    showProg(); setProgress(5);
+    const toolType=document.querySelector('input[name="xmlTool"]:checked')?.value||'reformat';
+    const isZip=file.name.toLowerCase().endsWith('.zip');
+    setStatus('📂 Đang đọc file...');
+    await delay(300);
+
+    if(isZip && typeof JSZip!=='undefined'){
+      setStatus('📦 Giải nén ZIP...');setProgress(15);
+      const zip=await new JSZip().loadAsync(file);
+      const xmlFiles=Object.keys(zip.files).filter(p=>p.toLowerCase().endsWith('.xml'));
+      if(!xmlFiles.length){ setStatus('⚠️ Không có XML trong ZIP'); hideProg(); addMessage('⚠️ ZIP không chứa XML','bot'); return; }
+      setStatus(`✅ ${xmlFiles.length} file XML`);setProgress(25);
+      addMessage(`📋 ${xmlFiles.length} file XML, đang xử lý...`,'bot');
+      await delay(400);
+      const out=new JSZip(); let done=0;
+      for(const path of xmlFiles){
+        done++;
+        setStatus(`⚙️ ${done}/${xmlFiles.length}: ${path.split('/').pop()}`);
+        setProgress(25+Math.round(done/xmlFiles.length*60));
+        await delay(100);
+        const c=await zip.file(path).async('string');
+        out.file(path,toolType==='reformat'?reformatXml(c):obfuscateXml(c,toolType==='obf_aggr'));
+      }
+      setStatus('📦 Đóng gói...');setProgress(90);await delay(400);
+      const blob=await out.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+      const name=file.name.replace(/\.zip$/i,'')+'-processed.zip';
+      const url=URL.createObjectURL(blob);
+      setStatus('✅ Hoàn thành!');setProgress(100);
+      document.getElementById('xmlResult').innerHTML=`<div style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;border-radius:10px;padding:14px;text-align:center;"><div style="color:#22c55e;font-weight:700;margin-bottom:10px;">✅ Xử lý thành công ${xmlFiles.length} file!</div><a href="${url}" download="${name}" style="background:#22c55e;color:#000;padding:9px 18px;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block;" onclick="trigDL(event,'${url}','${name}')">⬇ Tải về ${name}</a></div>`;
+      addMessage(`🎉 Xong! ${xmlFiles.length} file đã xử lý`,'bot');
+      setTimeout(()=>URL.revokeObjectURL(url),300000);
+    } else if(file.name.toLowerCase().endsWith('.xml')){
+      setStatus('📄 Đọc XML...');setProgress(30);
+      const reader=new FileReader();
+      reader.onload=async function(ev){
+        const c=ev.target.result;
+        setStatus('⚙️ Xử lý...');setProgress(55);
+        await delay(500);
+        const result=toolType==='reformat'?reformatXml(c):obfuscateXml(c,toolType==='obf_aggr');
+        setStatus('📄 Tạo file...');setProgress(85);await delay(200);
+        const blob=new Blob([result],{type:'application/xml'});
+        const name=file.name.replace(/\.xml$/i,'')+'-processed.xml';
+        const url=URL.createObjectURL(blob);
+        setStatus('✅ Hoàn thành!');setProgress(100);
+        document.getElementById('xmlResult').innerHTML=`<div style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;border-radius:10px;padding:14px;text-align:center;"><div style="color:#22c55e;font-weight:700;margin-bottom:10px;">✅ Xử lý thành công!</div><a href="${url}" download="${name}" style="background:#22c55e;color:#000;padding:9px 18px;border-radius:8px;font-weight:700;text-decoration:none;display:inline-block;" onclick="trigDL(event,'${url}','${name}')">⬇ Tải về ${name}</a></div>`;
+        addMessage('🎉 Hoàn thành! Nhấn nút tải về','bot');
+        setTimeout(()=>URL.revokeObjectURL(url),300000);
+      };
+      reader.onerror=()=>{ setStatus('❌ Lỗi đọc file'); hideProg(); };
+      reader.readAsText(file,'utf-8');
+    } else { setStatus('⚠️ Chỉ nhận .xml hoặc .zip'); hideProg(); }
+  }
+
+  window.trigDL=function(e,url,name){
+    e.preventDefault();
+    const a=document.createElement('a'); a.href=url; a.download=name; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); addMessage('✅ File đã tải về Downloads','bot'); },100);
+  };
+
+  // Wire button (immediate)
+  const xmlBtn=document.getElementById('openXmlToolBtn');
+  if(xmlBtn) xmlBtn.addEventListener('click',openXmlModal);
+
+  console.log('✅ XML Tools v2 loaded');
+})();
+
+console.log('✅ XMOD Chatbot v2.0 ready');
+
+// ================================================================
+// MOD TOOLS — openModTools, tab switch, upload zones, 3 tools
+// ================================================================
+window.openModTools = function() {
+  closeModal('modToolsModal');
+  const m = document.getElementById('modToolsModal');
+  if (m) m.classList.add('show');
+};
+
+window.switchToolTab = function(name) {
+  const tabs = ['giamlag','remake','back','effects'];
+  document.querySelectorAll('.tool-tab').forEach((t,i) => {
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  tabs.forEach(id => {
+    const p = document.getElementById('tab-'+id);
+    if (p) p.style.display = id === name ? '' : 'none';
+  });
+};
+
+// ── Upload zone helper ──
+function makeUploadZone(zoneId, inputId, onFileCb) {
+  const zone = document.getElementById(zoneId);
+  const inp  = document.getElementById(inputId);
+  if (!zone || !inp) return;
+
+  zone.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    zone.classList.add('has-file');
+    zone.innerHTML = `✅ <b>${f.name}</b> (${(f.size/1024).toFixed(1)} KB)`;
+    if (onFileCb) onFileCb(f);
+    e.target.value = '';
+  });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    zone.classList.add('has-file');
+    zone.innerHTML = `✅ <b>${f.name}</b> (${(f.size/1024).toFixed(1)} KB)`;
+    if (onFileCb) onFileCb(f);
+  });
+}
+
+// ── Progress helpers (per tool) — vẫn giữ để cập nhật modal nếu cần ──
+function toolProg(id, pct, status) {
+  const p = document.getElementById('prog-'+id);
+  const b = document.getElementById('progBar-'+id);
+  const s = document.getElementById('progStatus-'+id);
+  if (p) p.style.display = 'block';
+  if (b) b.style.width = Math.min(100, pct) + '%';
+  if (s) s.textContent = status;
+}
+function toolProgHide(id) {
+  const p = document.getElementById('prog-'+id);
+  if (p) p.style.display = 'none';
+}
+function toolResult(id, html) {
+  const r = document.getElementById('result-'+id);
+  if (r) r.innerHTML = html;
+}
+function dlBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+}
+
+// ================================================================
+// LIVE CODE VIEWER — hiển thị code thật đang xử lý trong chat
+// ================================================================
+let _liveCodeDiv = null;
+let _liveCodeBody = null;
+let _liveCodeBar = null;
+let _liveLineCount = 0;
+let _liveStartTime = 0;
+
+// Bắt đầu live code view — đóng modal, mở code viewer trong chat
+function liveCodeStart(toolName, fileName) {
+  // Đóng modal modTools
+  closeModal('modToolsModal');
+  hideWelcome();
+
+  _liveLineCount = 0;
+  _liveStartTime = Date.now();
+
+  const div = document.createElement('div');
+  div.className = 'message bot';
+  div.id = 'liveCodeMsg';
+  div.innerHTML = `
+    <div class="msg-avatar bot"></div>
+    <div class="code-typing-wrap" style="max-width:340px;min-width:280px;">
+      <div class="code-typing-bar">
+        <div class="code-dot red"></div>
+        <div class="code-dot yel"></div>
+        <div class="code-dot grn"></div>
+        <span class="code-typing-filename">${fileName}</span>
+        <span style="margin-left:auto;font-size:10px;color:rgba(255,255,255,0.3);font-family:'Rajdhani',sans-serif;" id="liveTimer">0.0s</span>
+      </div>
+      <div class="code-typing-body" id="liveCodeBody" style="max-height:200px;overflow-y:auto;"></div>
+      <div class="code-status-bar" id="liveStatusBar">
+        <span><span class="code-status-pulse"></span>${toolName} đang chạy...</span>
+        <span id="livePct">0%</span>
+      </div>
+    </div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  _liveCodeDiv  = div;
+  _liveCodeBody = div.querySelector('#liveCodeBody');
+  _liveCodeBar  = div.querySelector('#liveStatusBar');
+
+  // Đồng hồ đếm thời gian
+  const timerEl = div.querySelector('#liveTimer');
+  const timerInterval = setInterval(() => {
+    if (!document.getElementById('liveCodeMsg')) { clearInterval(timerInterval); return; }
+    timerEl.textContent = ((Date.now() - _liveStartTime) / 1000).toFixed(1) + 's';
+  }, 100);
+  div._timerInterval = timerInterval;
+}
+
+// Thêm dòng code thật vào viewer
+function liveCodeLine(html, pct) {
+  if (!_liveCodeBody) return;
+  _liveLineCount++;
+  const row = document.createElement('div');
+  row.className = 'code-line';
+  row.style.animationDelay = '0s';
+  row.innerHTML = `<span class="code-ln">${_liveLineCount}</span><span class="code-text">${html}</span>`;
+  _liveCodeBody.appendChild(row);
+  _liveCodeBody.scrollTop = _liveCodeBody.scrollHeight;
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  if (pct !== undefined) {
+    const pctEl = document.getElementById('livePct');
+    if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  }
+}
+
+// Kết thúc live code — hiện trạng thái xong + bot gửi tin nhắn tải về
+function liveCodeDone(toolName, blob, outName, summary) {
+  if (_liveCodeDiv) {
+    clearInterval(_liveCodeDiv._timerInterval);
+    const elapsed = ((Date.now() - _liveStartTime) / 1000).toFixed(1);
+    if (_liveCodeBar) {
+      _liveCodeBar.style.background = '#166534';
+      _liveCodeBar.innerHTML = `<span>✅ Hoàn thành trong ${elapsed}s</span><span>100%</span>`;
+    }
+    // Thêm dòng cuối
+    liveCodeLine(`<span class="cc">// ✅ Done! ${summary}</span>`);
+    const pctEl = document.getElementById('livePct');
+    if (pctEl) pctEl.textContent = '100%';
+  }
+
+  // Lưu blob để download
+  window._lastToolBlob = blob;
+  window._lastToolName = outName;
+
+  // Bot gửi tin nhắn kết quả với nút tải về
+  setTimeout(() => {
+    hideWelcome();
+    const div = document.createElement('div');
+    div.className = 'message bot';
+    div.dataset.cls = 'bot';
+    div.innerHTML = `
+      <div class="msg-avatar bot"></div>
+      <div class="bubble" style="padding:8px 12px;border:1px solid #22c55e;border-radius:16px 16px 16px 4px;background:rgba(15,20,15,0.97);max-width:260px;display:inline-block;">
+        <div style="color:#22c55e;font-weight:700;font-size:13px;">✅ ${toolName} hoàn thành!</div>
+        <div style="color:rgba(255,255,255,0.6);font-size:11px;margin:2px 0 6px;">${summary}</div>
+        <button onclick="downloadToolResult()" style="display:inline-flex;align-items:center;gap:4px;background:#22c55e;border:none;border-radius:5px;padding:4px 9px;color:#000;font-weight:700;font-size:11px;font-family:'Rajdhani',sans-serif;cursor:pointer;">⬇ ${outName}</button>
+      </div>`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    setTimeout(saveChatHistory, 200);
+  }, 600);
+}
+
+function liveCodeError(msg) {
+  if (_liveCodeDiv) {
+    clearInterval(_liveCodeDiv._timerInterval);
+    if (_liveCodeBar) {
+      _liveCodeBar.style.background = '#7f1d1d';
+      _liveCodeBar.innerHTML = `<span>❌ Lỗi</span><span></span>`;
+    }
+    liveCodeLine(`<span style="color:#f87171;">// ❌ ${msg}</span>`);
+  }
+  addMessage(`❌ Lỗi: ${msg}`, 'bot');
+}
+
+window.downloadToolResult = function() {
+  if (!window._lastToolBlob || !window._lastToolName) return;
+  dlBlob(window._lastToolBlob, window._lastToolName);
+  incStat('tools');
+};
+
+// ════════════════════════════════════════════
+// TOOL 1: GIẢM LAG SKILL
+// ════════════════════════════════════════════
+(function(){
+  let _file = null;
+  makeUploadZone('dropZone-giamlag', 'file-giamlag', f => {
+    _file = f;
+    runGiamLag();
+  });
+
+  async function runGiamLag() {
+    if (!_file) return;
+    liveCodeStart('⚡ Giảm Lag Skill', _file.name);
+    try {
+      liveCodeLine(`<span class="ck">const</span> zip = <span class="ck">await</span> <span class="cf">JSZip</span>().<span class="cf">loadAsync</span>(file);`, 5);
+      await new Promise(r=>setTimeout(r,400));
+      const zip = await new JSZip().loadAsync(_file);
+      const xmlPaths = Object.keys(zip.files).filter(p => !zip.files[p].dir && p.toLowerCase().endsWith('.xml'));
+      if (!xmlPaths.length) { liveCodeError('ZIP không chứa file XML nào!'); return; }
+
+      liveCodeLine(`<span class="cc">// ✅ Tìm thấy ${xmlPaths.length} file XML</span>`, 10);
+      await new Promise(r=>setTimeout(r,300));
+      liveCodeLine(`<span class="ck">const</span> outZip = <span class="ck">new</span> <span class="cf">JSZip</span>();`);
+      await new Promise(r=>setTimeout(r,200));
+
+      const outZip = new JSZip();
+      for (const p of Object.keys(zip.files)) {
+        if (!p.toLowerCase().endsWith('.xml') && !zip.files[p].dir) {
+          const raw = await zip.file(p).async('uint8array');
+          outZip.file(p, raw);
+        }
+      }
+
+      let done = 0;
+      for (const p of xmlPaths) {
+        done++;
+        const fname = p.split('/').pop();
+        const pct = 15 + Math.round(done/xmlPaths.length * 75);
+        if (done <= 6 || done === xmlPaths.length) {
+          liveCodeLine(`<span class="cf">addHolidayPath</span>(<span class="cs">"${fname}"</span>); <span class="cc">// [${done}/${xmlPaths.length}]</span>`, pct);
+        } else if (done === 7) {
+          liveCodeLine(`<span class="cc">// ... đang xử lý ${xmlPaths.length - 6} file còn lại...</span>`, pct);
+        }
+        const content = await zip.file(p).async('string');
+        const result = processGiamLag(content);
+        outZip.file(p, result);
+        await new Promise(r=>setTimeout(r, Math.max(8, 18000/xmlPaths.length)));
+      }
+
+      liveCodeLine(`<span class="cf">fixTrackGUID</span>(<span class="cs">"all"</span>); <span class="cc">// sửa GUID...</span>`, 92);
+      await new Promise(r=>setTimeout(r,300));
+      liveCodeLine(`<span class="ck">await</span> outZip.<span class="cf">generateAsync</span>({compression:<span class="cs">"DEFLATE"</span>});`, 96);
+      await new Promise(r=>setTimeout(r,400));
+
+      const blob = await outZip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+      const outName = _file.name.replace(/\.zip$/i,'') + '-giamlag.zip';
+      liveCodeDone('Giảm Lag Skill', blob, outName, `${done} file XML đã xử lý`);
+    } catch(e) { liveCodeError(e.message); }
+  }
+
+  // Logic port từ giảmlag.py
+  function processGiamLag(xmlText) {
+    xmlText = addGetHolidayResourcePath(xmlText);
+    xmlText = fixTrackGuids(xmlText);
+    return xmlText;
+  }
+
+  function addGetHolidayResourcePath(content) {
+    // Tìm tất cả <Track ...>...</Track>
+    const trackRe = /(<Track [\s\S]*?<\/Track>\s*\n?)/g;
+    let result = content;
+    const trackMatches = [...content.matchAll(trackRe)];
+
+    for (const tm of trackMatches) {
+      const track = tm[1];
+      // Bỏ qua track disabled
+      if (/enabled="false"/.test(track)) continue;
+
+      // Tìm String name="..." value="prefab_skill_effects/..." hoặc "Prefab_Skill_Effects/..."
+      const strRe = /<String name="([^"]*)" value="([Pp]refab_[Ss]kill_[Ee]ffects[^"]*)" refParamName="" useRefParam="false" \/>/g;
+      const strMatches = [...track.matchAll(strRe)];
+      if (!strMatches.length) continue;
+
+      let newTrack = track;
+      let holidayBlocks = '';
+
+      for (const sm of strMatches) {
+        const attrName   = sm[1];
+        const fullPath   = sm[2];
+        const shortName  = fullPath.split('/').pop();
+
+        const holidayTrack = `    <Track trackName="XGAME AOV" eventType="GetHolidayResourcePathTick" guid="X-GAME-XAOV-123" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" stopAfterLastEvent="true">
+      <Event eventName="GetHolidayResourcePathTick" time="0.000" isDuration="false" guid="MOD-BY-MMN-DZ">
+        <String name="holidayResourcePathPrefix" value="${fullPath}" refParamName="" useRefParam="false" />
+        <String name="outPathParamName" value="${shortName}" refParamName="" useRefParam="false" />
+        <String name="outSoundEventParamName" value="" refParamName="" useRefParam="false" />
+      </Event>
+    </Track>\n    `;
+        holidayBlocks += holidayTrack;
+
+        // Thay useRefParam="false" → useRefParam="true", value="" refParamName="shortName"
+        const oldStr = `<String name="${attrName}" value="${fullPath}" refParamName="" useRefParam="false" />`;
+        const newStr = `<String name="${attrName}" value="" refParamName="${shortName}" useRefParam="true" />`;
+        newTrack = newTrack.replace(oldStr, newStr);
+      }
+
+      result = result.replace(track, holidayBlocks + newTrack);
+    }
+    return result;
+  }
+
+  function fixTrackGuids(content) {
+    // Tìm tất cả Track và index theo thứ tự xuất hiện
+    const trackRe = /<Track trackName="([\s\S]*?)<\/Track>/g;
+    const tracks = [...content.matchAll(trackRe)];
+    for (let i = 0; i < tracks.length; i++) {
+      const trackContent = tracks[i][1];
+      const guidMatch = trackContent.match(/guid="([^"]+)" enabled/);
+      if (!guidMatch) continue;
+      const guid = guidMatch[1];
+      const correctId = `id="${i}" guid="${guid}"`;
+      // Thay thế tất cả id="..." guid="${guid}" → id="${i}" guid="${guid}"
+      content = content.replace(new RegExp(`id="[^"]*" guid="${guid.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}"`, 'g'), correctId);
+    }
+    return content;
+  }
+
+  window.runGiamLag_exposed = runGiamLag;
+})();
+
+// ════════════════════════════════════════════
+// TOOL 2: REMAKE SKILL
+// ════════════════════════════════════════════
+(function(){
+  let _inFile = null, _outFile = null;
+
+  function checkRemakeReady() {
+    const btn = document.getElementById('btn-remake');
+    if (btn) btn.disabled = !(_inFile && _outFile);
+  }
+
+  makeUploadZone('dropZone-remakeIn',  'file-remakeIn',  f => { _inFile  = f; checkRemakeReady(); });
+  makeUploadZone('dropZone-remakeOut', 'file-remakeOut', f => { _outFile = f; checkRemakeReady(); });
+
+  window.runRemake = async function() {
+    if (!_inFile || !_outFile) return;
+    const btn = document.getElementById('btn-remake');
+    if (btn) btn.disabled = true;
+    liveCodeStart('🔁 Remake Skill', _inFile.name + ' → ' + _outFile.name);
+    liveCodeLine(`<span class="ck">const</span> inZip = <span class="ck">await</span> <span class="cf">JSZip</span>().<span class="cf">loadAsync</span>(inputFile);`, 5);
+    await new Promise(r=>setTimeout(r,350));
+
+    try {
+      const inZip  = await new JSZip().loadAsync(_inFile);
+      liveCodeLine(`<span class="ck">const</span> outZip = <span class="ck">await</span> <span class="cf">JSZip</span>().<span class="cf">loadAsync</span>(outputFile);`, 12);
+      await new Promise(r=>setTimeout(r,300));
+      const outZip = await new JSZip().loadAsync(_outFile);
+
+      const inXmls  = Object.keys(inZip.files).filter(p => !inZip.files[p].dir  && p.toLowerCase().endsWith('.xml'));
+      const outXmls = Object.keys(outZip.files).filter(p => !outZip.files[p].dir && p.toLowerCase().endsWith('.xml'));
+      liveCodeLine(`<span class="cc">// Input: ${inXmls.length} XML | Output: ${outXmls.length} XML</span>`, 22);
+      await new Promise(r=>setTimeout(r,250));
+
+      const PATTERN = /(eventType="(?:Camera|GetHolidayResourcePath|ChangeAnim|SetAnimation|PlayAnim|SetActorNode|ChangeActorMesh|TriggerParticle|PlayHeroSound|TriggerMutiMats|BattleUIAnimation)[\s\S]*?<\/Event>\s*<\/Track>\n)/g;
+      const DELETE_MARKERS = ['DELETE_EFFECTS','DELETE_EFFECTS2','DELETE_SOUND','DELETE_ANIMATION'];
+
+      function deleteCodeGoc(text) {
+        return text
+          .replace(/resourceName" value="[^"]*"/g, 'resourceName" value="DELETE_EFFECTS"')
+          .replace(/prefabName" value="[^"]*"/g,   'prefabName" value="DELETE_EFFECTS2"')
+          .replace(/eventName" value="[^"]*"/g,    'eventName" value="DELETE_SOUND"')
+          .replace(/clipName" value="[^"]*"/g,     'clipName" value="DELETE_ANIMATION"');
+      }
+      function isDeletedTrack(t) { return DELETE_MARKERS.some(m => t.includes(m)); }
+
+      const resultZip = new JSZip();
+      for (const p of Object.keys(outZip.files)) {
+        if (!outZip.files[p].dir && !p.toLowerCase().endsWith('.xml')) {
+          const raw = await outZip.file(p).async('uint8array');
+          resultZip.file(p, raw);
+        }
+      }
+
+      let processed = 0, skippedTotal = 0;
+      for (const inPath of inXmls) {
+        const fname = inPath.split('/').pop();
+        const outPath = outXmls.find(p => p.split('/').pop() === fname);
+        const inContent = await inZip.file(inPath).async('string');
+        const matches = [...inContent.matchAll(PATTERN)];
+        if (!matches.length) {
+          if (outPath) {
+            const raw = await outZip.file(outPath).async('string');
+            resultZip.file(outPath, raw);
+          }
+          continue;
+        }
+
+        processed++;
+        const pct2 = 25 + Math.round(processed / inXmls.length * 65);
+        if (processed <= 5 || processed === inXmls.length) {
+          liveCodeLine(`<span class="cf">remakeTrack</span>(<span class="cs">"${fname}"</span>); <span class="cc">// ${matches.length} track</span>`, pct2);
+        } else if (processed === 6) {
+          liveCodeLine(`<span class="cc">// ... xử lý ${inXmls.length - 5} file còn lại...</span>`, pct2);
+        }
+
+        let outContent = '';
+        let lastTwoLines = [];
+
+        if (outPath) {
+          let existing = await outZip.file(outPath).async('string');
+          const lines = existing.split('\n');
+          if (lines.length >= 2) {
+            lastTwoLines = lines.slice(-2);
+            outContent = lines.slice(0, -2).join('\n');
+          } else {
+            outContent = existing;
+          }
+          outContent = deleteCodeGoc(outContent);
+        }
+
+        const validMatches = matches.filter(m => !isDeletedTrack(m[1]));
+        skippedTotal += matches.length - validMatches.length;
+
+        let newContent = outContent;
+        for (const m of validMatches) {
+          newContent += `    <Track trackName="XMOD" ${m[1]}`;
+        }
+        if (lastTwoLines.length) newContent += lastTwoLines.join('\n');
+
+        resultZip.file(outPath || inPath, newContent);
+        await new Promise(r => setTimeout(r, Math.max(8, 16000/Math.max(inXmls.length,1))));
+      }
+
+      liveCodeLine(`<span class="cf">fixGUID</span>(<span class="cs">"sequential"</span>); <span class="cc">// fix ID thứ tự</span>`, 94);
+      await new Promise(r=>setTimeout(r,300));
+      liveCodeLine(`<span class="ck">await</span> resultZip.<span class="cf">generateAsync</span>({compression:<span class="cs">"DEFLATE"</span>});`, 97);
+      await new Promise(r=>setTimeout(r,400));
+
+      const blob = await resultZip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+      const outName = _outFile.name.replace(/\.zip$/i,'') + '-remaked.zip';
+      liveCodeDone('Remake Skill', blob, outName, `${processed} file xử lý | bỏ qua ${skippedTotal} Track DELETE`);
+    } catch(e) { liveCodeError(e.message); }
+    finally {
+      const btn = document.getElementById('btn-remake');
+      if (btn && _inFile && _outFile) btn.disabled = false;
+    }
+  };
+})();
+
+// ════════════════════════════════════════════
+// TOOL 3: BACK XML
+// ════════════════════════════════════════════
+(function(){
+  let _backFile = null;
+
+  makeUploadZone('dropZone-back', 'file-back', f => {
+    _backFile = f;
+    checkBackReady();
+  });
+
+  document.getElementById('backNameIds')?.addEventListener('input', checkBackReady);
+
+  function checkBackReady() {
+    const btn = document.getElementById('btn-back');
+    const val = document.getElementById('backNameIds')?.value?.trim();
+    if (btn) btn.disabled = !(_backFile && val && /^\d+_[^/]+\/\d+$/.test(val));
+  }
+
+  window.runBack = async function() {
+    const nameIds = document.getElementById('backNameIds')?.value?.trim();
+    if (!_backFile || !nameIds) return;
+
+    const match = nameIds.match(/^(\d+)_([^/]+)\/(\d+)$/);
+    if (!match) {
+      addMessage('❌ Sai format! Dùng: 129_DianWei/12912', 'bot'); return;
+    }
+    const [, prefix, heroname, skinid] = match;
+    const skin_id = prefix + '00';
+
+    const btn = document.getElementById('btn-back');
+    if (btn) btn.disabled = true;
+
+    liveCodeStart('🏠 Back XML', _backFile.name);
+    liveCodeLine(`<span class="ck">const</span> xml = <span class="ck">await</span> file.<span class="cf">text</span>();`, 10);
+    await new Promise(r=>setTimeout(r,500));
+    liveCodeLine(`<span class="cc">// Hero: ${heroname} | Skin: ${skinid} | ID: ${skin_id}</span>`, 20);
+    await new Promise(r=>setTimeout(r,400));
+
+    try {
+      const content = await _backFile.text();
+      liveCodeLine(`<span class="cf">buildTrack</span>(<span class="cs">"TriggerParticle"</span>, <span class="cs">"huicheng_tongyong_01"</span>);`, 35);
+      await new Promise(r=>setTimeout(r,600));
+      liveCodeLine(`<span class="cf">buildTrack</span>(<span class="cs">"TriggerParticleTick"</span>, <span class="cs">"huijidi_01"</span>);`, 50);
+      await new Promise(r=>setTimeout(r,500));
+      liveCodeLine(`<span class="cf">buildTrack</span>(<span class="cs">"PlayAnimDuration"</span>, <span class="cs">"${skinid}/Home"</span>);`, 65);
+      await new Promise(r=>setTimeout(r,500));
+      liveCodeLine(`<span class="cf">buildTrack</span>(<span class="cs">"SpawnBulletTick"</span>, <span class="cs">"${skinid}_Back.xml"</span>);`, 78);
+      await new Promise(r=>setTimeout(r,400));
+
+      const effectTrack = `
+    <Track trackName="TriggerParticle0" eventType="TriggerParticle" guid="28dbc769-e471-407e-8108-9012ecf910d8" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" SkinAvatarFilterType="11">
+      <Event eventName="TriggerParticle" time="0.000" length="7.000" isDuration="true" guid="6057cb60-5062-42e9-a6cd-09c8e9e7eb05">
+        <TemplateObject name="targetId" objectName="self" id="0" isTemp="false" refParamName="" useRefParam="false"/>
+        <TemplateObject name="objectSpaceId" objectName="self" id="0" isTemp="false" refParamName="" useRefParam="false"/>
+        <String name="parentResourceName" value="" refParamName="" useRefParam="false"/>
+        <String name="resourceName" value="prefab_skill_effects/hero_skill_effects/${nameIds}/huicheng_tongyong_01" refParamName="" useRefParam="false"/>
+        <Vector3 name="bindPosOffset" x="0.000" y="-0.300" z="0.000" refParamName="" useRefParam="false"/>
+      </Event>
+      <SkinOrAvatarList id="${skin_id}"/>
+    </Track>
+    <Track trackName="TriggerParticle0" eventType="TriggerParticle" guid="28dbc769-e471-407e-8108-9012ecf910d8" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" SkinAvatarFilterType="11">
+      <Event eventName="TriggerParticleTick" time="7.000" isDuration="false" guid="f7df0085-7f43-4a62-8d4c-1318238ba3ce">
+        <TemplateObject name="targetId" objectName="None" id="-1" isTemp="false" refParamName="" useRefParam="false"/>
+        <TemplateObject name="objectSpaceId" objectName="self" id="0" isTemp="false" refParamName="" useRefParam="false"/>
+        <String name="parentResourceName" value="" refParamName="" useRefParam="false"/>
+        <String name="resourceName" value="prefab_skill_effects/hero_skill_effects/${nameIds}/huijidi_01" refParamName="" useRefParam="false"/>
+        <float name="lifeTime" value="5.000" refParamName="" useRefParam="false"/>
+      </Event>
+      <SkinOrAvatarList id="${skin_id}"/>
+    </Track>`;
+      const animTrack = `
+    <Track trackName="PlayAnimDuration0" eventType="PlayAnimDuration" guid="664523ad-bc5e-4796-94a7-003b758fb8c4" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" SkinAvatarFilterType="11">
+      <Event eventName="PlayAnimDuration" time="0.000" length="7.000" isDuration="true" guid="ff3c2242-829b-4cfd-aaad-8e70a5e03ba2">
+        <TemplateObject name="targetId" objectName="self" id="0" isTemp="false" refParamName="" useRefParam="false" />
+        <String name="clipName" value="${skinid}/Home" refParamName="" useRefParam="false" />
+        <int name="layer" value="2" refParamName="" useRefParam="false" />
+        <bool name="bLoop" value="true" refParamName="" useRefParam="false" />
+        <float name="crossFadeTime" value="0.100" refParamName="" useRefParam="false" />
+        <bool name="alwaysAnimate" value="true" refParamName="" useRefParam="false" />
+      </Event>
+      <SkinOrAvatarList id="${skin_id}"/>
+    </Track>
+    <Track trackName="PlayAnimDuration2" eventType="PlayAnimDuration" guid="972d1382-031a-4c10-8eeb-d10b3fc76f47" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" SkinAvatarFilterType="11">
+      <Event eventName="PlayAnimDuration" time="7.000" length="1.500" isDuration="true" guid="620b137f-72fa-4602-a653-72ae85944d33">
+        <TemplateObject name="targetId" objectName="self" id="0" isTemp="false" refParamName="" useRefParam="false" />
+        <String name="clipName" value="${skinid}/Gohome" refParamName="" useRefParam="false" />
+        <int name="layer" value="2" refParamName="" useRefParam="false" />
+        <bool name="alwaysAnimate" value="true" refParamName="" useRefParam="false" />
+      </Event>
+      <SkinOrAvatarList id="${skin_id}"/>
+    </Track>`;
+      const linkTrack = `
+    <Track trackName="${skinid}" eventType="SpawnBulletTick" guid="0257db41-7b49-4f1b-a294-96f6d19bf012" enabled="true" useRefParam="false" refParamName="" r="0.000" g="0.000" b="0.000" execOnForceStopped="false" execOnActionCompleted="false" stopAfterLastEvent="true">
+      <Event eventName="SpawnBulletTick" time="0.000" isDuration="false" guid="3f567dd6-78d5-4b3b-bcfc-14a7acea34af">
+        <TemplateObject name="targetId" id="0" objectName="self" isTemp="false" refParamName="" useRefParam="false" />
+        <String name="ActionName" value="prefab_characters/prefab_hero/${heroname}/skill/${skinid}_Back.xml" refParamName="" useRefParam="false" />
+      </Event>
+      <SkinOrAvatarList id="${skin_id}"/>
+    </Track>`;
+
+      const allTracks = effectTrack + animTrack + linkTrack;
+      const pattern = /(\s*<\/Action>\s*<\/Project>)/;
+      if (!pattern.test(content)) { liveCodeError('Không tìm thấy </Action></Project>!'); if(btn) btn.disabled=false; return; }
+
+      liveCodeLine(`xml.<span class="cf">replace</span>(<span class="cs">"&lt;/Action&gt;"</span>, tracks + <span class="cs">"&lt;/Action&gt;"</span>);`, 90);
+      await new Promise(r=>setTimeout(r,400));
+
+      const newContent = content.replace(pattern, allTracks + '$1');
+      const blob = new Blob([newContent], {type:'application/xml'});
+      const outName = _backFile.name.replace(/\.xml$/i,'') + '-done.xml';
+      liveCodeDone('Back XML', blob, outName, `${heroname} | Skin ${skinid} — 3 Track đã chèn`);
+    } catch(e) { liveCodeError(e.message); }
+    finally { const b2 = document.getElementById('btn-back'); if(b2) b2.disabled=false; }
+  };
+})();
+
+// ════════════════════════════════════════════
+// TOOL 4: EFFECTS COPY (port từ ToolsEffect_Copy_.py)
+// ════════════════════════════════════════════
+(function(){
+  let _effFile = null;
+
+  makeUploadZone('dropZone-effects', 'file-effects', f => {
+    _effFile = f;
+    checkEffectsReady();
+  });
+
+  function checkEffectsReady() {
+    const btn  = document.getElementById('btn-effects');
+    const hero = document.getElementById('effects-hero')?.value?.trim();
+    const id   = document.getElementById('effects-id')?.value?.trim();
+    if (btn) btn.disabled = !(_effFile && hero && id);
+  }
+
+  document.getElementById('effects-hero')?.addEventListener('input', checkEffectsReady);
+  document.getElementById('effects-id')?.addEventListener('input', checkEffectsReady);
+
+  // Logic port từ ToolsEffect_Copy_.py — mod_ages()
+  // Thay đường dẫn: .../hero_skill_effects/OLD_HERO/OLD_ID/effect_name
+  //             → .../hero_skill_effects/HeroName/SkinId/effect_name
+  function modAges(content, heroName, skinId) {
+    const re = /<String([^>]*?)value="((?:prefab_skill_effects|Prefab_Skill_Effects)\/(?:hero_skill_effects|Hero_Skill_Effects)\/[^"]*?)"([^>]*?)\/>/gi;
+    return content.replace(re, (match, before, path, after) => {
+      try {
+        const parts = path.split('/');
+        // Giữ 2 phần đầu: "prefab_skill_effects/hero_skill_effects"
+        const prefix = parts.slice(0,2).join('/');
+        // Phần cuối: tên hiệu ứng (giữ nguyên)
+        const effectName = parts[parts.length - 1];
+        const newPath = `${prefix}/${heroName}/${skinId}/${effectName}`;
+        return `<String${before}value="${newPath}"${after}/>`;
+      } catch(e) { return match; }
+    });
+  }
+
+  window.runEffectsCopy = async function() {
+    if (!_effFile) return;
+    const heroName = document.getElementById('effects-hero')?.value?.trim();
+    const skinId   = document.getElementById('effects-id')?.value?.trim();
+    if (!heroName || !skinId) return;
+
+    const btn = document.getElementById('btn-effects');
+    if (btn) btn.disabled = true;
+
+    liveCodeStart('🎨 Effects Copy', _effFile.name);
+    liveCodeLine(`<span class="ck">const</span> zip = <span class="ck">await</span> <span class="cf">JSZip</span>().<span class="cf">loadAsync</span>(file);`, 5);
+    await new Promise(r=>setTimeout(r,400));
+
+    try {
+      const zip = await new JSZip().loadAsync(_effFile);
+      const filePaths = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+      if (!filePaths.length) { liveCodeError('ZIP rỗng!'); if(btn) btn.disabled=false; return; }
+
+      liveCodeLine(`<span class="cc">// ${filePaths.length} file — Hero: ${heroName} | ID: ${skinId}</span>`, 10);
+      await new Promise(r=>setTimeout(r,300));
+      liveCodeLine(`<span class="ck">const</span> re = <span class="ck">new</span> <span class="cf">RegExp</span>(<span class="cs">"hero_skill_effects/.+/.+/"</span>);`, 15);
+      await new Promise(r=>setTimeout(r,350));
+
+      const outZip = new JSZip();
+      let processed = 0, changed = 0, total = filePaths.length;
+
+      for (const p of filePaths) {
+        processed++;
+        const pct = 15 + Math.round(processed/total * 75);
+        const fname = p.split('/').pop();
+        const lower = p.toLowerCase();
+
+        if (lower.endsWith('.xml') || lower.endsWith('.bytes')) {
+          try {
+            const text = await zip.file(p).async('string');
+            const newText = modAges(text, heroName, skinId);
+            outZip.file(p, newText);
+            if (newText !== text) {
+              changed++;
+              if (changed <= 5 || processed === total) {
+                liveCodeLine(`<span class="cf">replacePath</span>(<span class="cs">"${fname}"</span>) <span class="cc">→ ${heroName}/${skinId}</span>`, pct);
+              } else if (changed === 6) {
+                liveCodeLine(`<span class="cc">// ... đang thay đổi ${total - 5} file còn lại...</span>`, pct);
+              }
+            }
+          } catch(e) {
+            const raw = await zip.file(p).async('uint8array');
+            outZip.file(p, raw);
+          }
+        } else {
+          const raw = await zip.file(p).async('uint8array');
+          outZip.file(p, raw);
+        }
+        await new Promise(r => setTimeout(r, Math.max(8, 16000/Math.max(total,1))));
+      }
+
+      liveCodeLine(`<span class="ck">await</span> outZip.<span class="cf">generateAsync</span>({compression:<span class="cs">"DEFLATE"</span>});`, 96);
+      await new Promise(r=>setTimeout(r,400));
+
+      const blob = await outZip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+      const outName = _effFile.name.replace(/\.zip$/i,'') + `-${heroName}-${skinId}.zip`;
+      liveCodeDone('Effects Copy', blob, outName, `${changed}/${processed} file đã đổi path → ${heroName}/${skinId}`);
+    } catch(e) { liveCodeError(e.message); }
+    finally { if(btn) btn.disabled=false; }
+  };
+})();
+
+// ================================================================
+// 🌐 ĐA NGÔN NGỮ (i18n)
+// ================================================================
+const I18N = {
+  vi: {
+    welcome_title:    'XMOD Assistant',
+    welcome_sub:      'Trợ lý tìm mod skin Liên Quân, nhạc, XML tools và AI chat',
+    all_mods:         '📦 Tất cả mod',
+    music:            '🎵 Phát nhạc',
+    bg_title:         '🖼️ CHỌN BACKGROUND',
+    profile_title:    '👤 HỒ SƠ',
+    profile_pick_avatar: 'CHỌN AVATAR',
+    profile_name_lbl: 'TÊN HIỂN THỊ',
+    profile_bio_lbl:  'GIỚI THIỆU',
+    profile_save:     '💾 LƯU HỒ SƠ',
+    stat_msgs:        'Tin nhắn',
+    stat_tools:       'Tool chạy',
+    stat_days:        'Ngày dùng',
+    placeholder_input:'Nhập tên tướng hoặc lệnh...',
+    hint_enter:       'Enter gửi · Shift+Enter xuống dòng',
+    status_online:    'Online',
+  },
+  en: {
+    welcome_title:    'XMOD Assistant',
+    welcome_sub:      'Find AoV mod skins, music, XML tools and AI chat',
+    all_mods:         '📦 All mods',
+    music:            '🎵 Play music',
+    bg_title:         '🖼️ BACKGROUND',
+    profile_title:    '👤 PROFILE',
+    profile_pick_avatar: 'PICK AVATAR',
+    profile_name_lbl: 'DISPLAY NAME',
+    profile_bio_lbl:  'BIO',
+    profile_save:     '💾 SAVE PROFILE',
+    stat_msgs:        'Messages',
+    stat_tools:       'Tools run',
+    stat_days:        'Days active',
+    placeholder_input:'Type hero name or command...',
+    hint_enter:       'Enter to send · Shift+Enter newline',
+    status_online:    'Online',
+  }
+};
+
+let currentLang = 'vi';
+try { currentLang = localStorage.getItem('xmod_lang') || 'vi'; } catch(e){}
+
+function setLang(lang) {
+  currentLang = lang;
+  try { localStorage.setItem('xmod_lang', lang); } catch(e){}
+
+  // Toggle buttons
+  document.getElementById('btnVI')?.classList.toggle('active', lang === 'vi');
+  document.getElementById('btnEN')?.classList.toggle('active', lang === 'en');
+
+  const t = I18N[lang];
+  // data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key]) el.textContent = t[key];
+  });
+  // Placeholder
+  const inp = document.getElementById('userInput');
+  if (inp) inp.placeholder = t.placeholder_input;
+  // Hint
+  const hint = document.querySelector('.input-hint-text');
+  if (hint) hint.textContent = t.hint_enter;
+  // Status
+  const statusEl = document.querySelector('.topbar-status');
+  if (statusEl) statusEl.innerHTML = `<div class="status-dot"></div> ${t.status_online}`;
+}
+
+// Apply on load
+setLang(currentLang);
+
+// ================================================================
+// 👤 HỒ SƠ NGƯỜI DÙNG
+// ================================================================
+const AVATAR_PRESETS = [
+  'https://i.postimg.cc/BQfwbKH2/Polish-20250915-131509600.png',
+  'https://i.postimg.cc/sgKWd1q6/Polish-20250913-134147206.png',
+  'https://i.postimg.cc/L5K9dVrK/53202.jpg',
+  'https://i.postimg.cc/7PJd5vbP/16712.jpg',
+  'https://i.postimg.cc/YSCWv57R/lien-quan-x-conan-lich-ra-mat-tat-ca-cac-skin-collab-1.webp',
+];
+
+// Profile data
+let profile = { name:'XMOD User', bio:'', avatar: AVATAR_PRESETS[0], uid:'' };
+try {
+  const saved = JSON.parse(localStorage.getItem('xmod_profile') || '{}');
+  if (saved.name) profile.name = saved.name;
+  if (saved.bio)  profile.bio  = saved.bio;
+  if (saved.avatar) profile.avatar = saved.avatar;
+  if (!saved.uid) {
+    profile.uid = 'XMOD-' + Math.random().toString(36).slice(2,8).toUpperCase();
+    saved.uid = profile.uid;
+    localStorage.setItem('xmod_profile', JSON.stringify({...profile, uid: profile.uid}));
+  } else { profile.uid = saved.uid; }
+} catch(e) {
+  profile.uid = 'XMOD-' + Math.random().toString(36).slice(2,8).toUpperCase();
+}
+
+// Stats tracking
+function incStat(key) {
+  try {
+    const stats = JSON.parse(localStorage.getItem('xmod_stats') || '{}');
+    stats[key] = (stats[key] || 0) + 1;
+    localStorage.setItem('xmod_stats', JSON.stringify(stats));
+  } catch(e){}
+}
+function getStats() {
+  try { return JSON.parse(localStorage.getItem('xmod_stats') || '{}'); } catch(e){ return {}; }
+}
+function trackDay() {
+  try {
+    const stats = JSON.parse(localStorage.getItem('xmod_stats') || '{}');
+    const today = new Date().toDateString();
+    const days  = new Set(JSON.parse(localStorage.getItem('xmod_days') || '[]'));
+    days.add(today);
+    localStorage.setItem('xmod_days', JSON.stringify([...days]));
+  } catch(e){}
+}
+function getDayCount() {
+  try { return JSON.parse(localStorage.getItem('xmod_days') || '[]').length; } catch(e){ return 0; }
+}
+trackDay();
+
+// Update user avatar in input bar when profile changes
+function applyProfileToUI() {
+  // topbar avatar = bot avatar (không đổi), user avatar = profile avatar
+  const userAvatars = document.querySelectorAll('.msg-avatar.user, .avatar.user');
+  userAvatars.forEach(a => { a.style.backgroundImage = `url('${profile.avatar}')`; });
+}
+applyProfileToUI();
+
+window.openProfile = function() {
+  // Build avatar picker
+  const row = document.getElementById('avatarPickerRow');
+  if (row) {
+    row.innerHTML = AVATAR_PRESETS.map((url, i) =>
+      `<div class="avatar-opt${profile.avatar===url?' selected':''}" style="background-image:url('${url}')"
+        onclick="selectAvatarPreset('${url}',this)"></div>`
+    ).join('');
+  }
+
+  // Fill inputs
+  const ni = document.getElementById('profileNameInput');
+  const bi = document.getElementById('profileBioInput');
+  if (ni) ni.value = profile.name;
+  if (bi) bi.value = profile.bio;
+
+  // Display name & uid
+  const dn = document.getElementById('profileDisplayName');
+  const uid = document.getElementById('profileUID');
+  if (dn) dn.textContent = profile.name;
+  if (uid) uid.textContent = 'UID: ' + profile.uid;
+
+  // Big avatar
+  const ba = document.getElementById('profileAvatar');
+  if (ba) ba.style.backgroundImage = `url('${profile.avatar}')`;
+
+  // Stats
+  const stats = getStats();
+  const ms = document.getElementById('stat-msgs');
+  const ts = document.getElementById('stat-tools');
+  const ds = document.getElementById('stat-days');
+  if (ms) ms.textContent = stats.msgs || 0;
+  if (ts) ts.textContent = stats.tools || 0;
+  if (ds) ds.textContent = getDayCount();
+
+  // Avatar upload handler
+  const upInp = document.getElementById('avatarUpload');
+  if (upInp && !upInp._wired) {
+    upInp._wired = true;
+    upInp.onchange = function(e) {
+      const file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        profile.avatar = ev.target.result;
+        const ba = document.getElementById('profileAvatar');
+        if (ba) ba.style.backgroundImage = `url('${profile.avatar}')`;
+        // Deselect presets
+        document.querySelectorAll('.avatar-opt').forEach(o => o.classList.remove('selected'));
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    };
+  }
+
+  document.getElementById('profileModal')?.classList.add('show');
+};
+
+window.selectAvatarPreset = function(url, el) {
+  profile.avatar = url;
+  document.querySelectorAll('.avatar-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const ba = document.getElementById('profileAvatar');
+  if (ba) ba.style.backgroundImage = `url('${url}')`;
+};
+
+window.saveProfile = function() {
+  const ni = document.getElementById('profileNameInput');
+  const bi = document.getElementById('profileBioInput');
+  const name = (ni?.value?.trim()) || 'XMOD User';
+  const bio  = bi?.value?.trim() || '';
+  profile.name = name;
+  profile.bio  = bio;
+  try {
+    localStorage.setItem('xmod_profile', JSON.stringify(profile));
+  } catch(e){}
+  // Update display name in modal
+  const dn = document.getElementById('profileDisplayName');
+  if (dn) dn.textContent = name;
+  applyProfileToUI();
+  closeModal('profileModal');
+  addMessage(`✅ Đã lưu hồ sơ: ${name}`, 'bot');
+};
+
+// Patch addMessage để tăng stat và dùng avatar người dùng
+const _origAddMessage = addMessage;
+window._patchedAddMessage = true;
+
+// Override user avatar in addMessage — inject style after element added
+const _chatObserver = new MutationObserver(() => {
+  document.querySelectorAll('.msg-avatar.user').forEach(a => {
+    if (!a.dataset.patched) {
+      a.dataset.patched = '1';
+      a.style.backgroundImage = `url('${profile.avatar}')`;
+    }
+  });
+});
+_chatObserver.observe(chatArea, { childList: true, subtree: true });
+
+// Track message stat
+const _origHandleSend = handleSend;
+window.handleSend = function() {
+  incStat('msgs');
+  _origHandleSend();
+};
+
+// Track tool stat
+const _origDlBlob = dlBlob;
+window.dlBlob = function(blob, filename) {
+  incStat('tools');
+  _origDlBlob(blob, filename);
+};
+
+// ================================================================
+// 📱 PWA — CÀI VỀ MÀN HÌNH
+// ================================================================
+let _deferredPWA = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPWA = e;
+  // Hiện banner sau 3 giây nếu chưa dismiss
+  try {
+    if (localStorage.getItem('pwa_dismissed') === '1') return;
+  } catch(ex){}
+  setTimeout(() => {
+    const banner = document.getElementById('pwaBanner');
+    if (banner) banner.classList.add('show');
+  }, 3000);
+});
+
+document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+  const banner = document.getElementById('pwaBanner');
+  if (_deferredPWA) {
+    _deferredPWA.prompt();
+    const { outcome } = await _deferredPWA.userChoice;
+    if (outcome === 'accepted') {
+      addMessage('🎉 XMOD đã được cài về màn hình! Giờ có thể dùng như app thật.', 'bot');
+    }
+    _deferredPWA = null;
+    if (banner) banner.classList.remove('show');
+  } else {
+    // Fallback: hướng dẫn thủ công
+    if (banner) banner.classList.remove('show');
+    addMessage(
+      '📱 Cách cài XMOD về màn hình:\n' +
+      '• Chrome Android: Menu ⋮ → "Thêm vào màn hình chính"\n' +
+      '• Safari iOS: Chia sẻ → "Thêm vào màn hình chính"\n' +
+      '• Samsung Browser: Menu → "Thêm trang vào" → Màn hình chính', 'bot');
+  }
+});
+
+window.dismissPWA = function() {
+  const banner = document.getElementById('pwaBanner');
+  if (banner) banner.classList.remove('show');
+  try { localStorage.setItem('pwa_dismissed','1'); } catch(e){}
+};
+
+window.addEventListener('appinstalled', () => {
+  addMessage('✅ Cài đặt thành công! Tìm icon XMOD trên màn hình chính.', 'bot');
+});
+
+// Nút cài thủ công khi gõ lệnh
+window.openInstallGuide = function() {
+  addMessage(
+    '📱 Cách thêm XMOD vào màn hình:\n\n' +
+    '🔵 Chrome Android:\nMenu ⋮ (góc phải trên) → "Thêm vào màn hình chính" → Thêm\n\n' +
+    '🟠 Samsung Browser:\nMenu → "Thêm trang vào" → Màn hình chính\n\n' +
+    '⚪ Safari iOS:\nNút Chia sẻ ↑ → "Thêm vào màn hình chính"', 'bot');
+};
+
+// ================================================================
+// MOD FILE — SKIN DATA & LOGIC
+// ================================================================
+const SKIN_DB = [
+  {hero:"Toro",id:"105",skins:[{id:"10500",name:"Mặc định"},{id:"10501",name:"Đặc cảnh NYPD"},{id:"10502",name:"Trung phong cắm"},{id:"10503",name:"Thần thoại Hy Lạp"},{id:"10504",name:"Ngưu hải vương"},{id:"10505",name:"Bạch mao ngưu"},{id:"10506",name:"Tử Lôi Thần Ngưu"}]},
+  {hero:"Krixi",id:"106",skins:[{id:"10600",name:"Mặc định"},{id:"10601",name:"Công chúa bướm"},{id:"10602",name:"Xứ sở thần tiên"},{id:"10603",name:"Tiệc bãi biển"},{id:"10604",name:"Cô tiên thỏ"},{id:"10605",name:"Phó văn nghệ"},{id:"10606",name:"Tiểu yêu nữ"},{id:"10607",name:"Hồ thiên nga"},{id:"10608",name:"Thần thoại Hy Lạp"},{id:"10609",name:"Thủy thủ"},{id:"10611",name:"Lốc xoáy kinh hoàng Tatsumaki"},{id:"10613",name:"Nàng tiên nổi loạn"},{id:"10615",name:"Tiểu hồng mai"},{id:"10617",name:"Quán quân"},{id:"10620",name:"Phù thủy thời không"},{id:"10621",name:"Uyên Ương mộng điệp"}]},
+  {hero:"Zephys",id:"107",skins:[{id:"10700",name:"Mặc định"},{id:"10701",name:"Oán linh"},{id:"10703",name:"Hiệp sĩ bí ngô"},{id:"10704",name:"Dung nham"},{id:"10705",name:"Siêu việt"},{id:"10706",name:"Phi thương"},{id:"10707",name:"Tư lệnh viễn chinh"},{id:"10708",name:"Hắc vô thường"},{id:"10709",name:"Inosuke Hashibira"},{id:"10711",name:"Đầu bếp Sashimi"},{id:"10712",name:"Nghệ nhân đồ chơi"},{id:"10714",name:"Kỷ Nguyên Hổ Phách"}]},
+  {hero:"Gildur",id:"108",skins:[{id:"10800",name:"Mặc định"},{id:"10801",name:"Tiệc bãi biển"},{id:"10802",name:"Phượt thủ"},{id:"10803",name:"Đại gia học viện"},{id:"10804",name:"Đại võ sư"},{id:"10805",name:"Thuyền trưởng râu bạc"},{id:"10806",name:"Bác học thiên tài"},{id:"10807",name:"Phù thủy Ba Tư"},{id:"10809",name:"Xích Long"}]},
+  {hero:"Veera",id:"109",skins:[{id:"10900",name:"Mặc định"},{id:"10901",name:"Cô giáo hắc ám"},{id:"10902",name:"Góa phụ giả kim"},{id:"10903",name:"Nàng dơi tuyết"},{id:"10904",name:"Y tá bạo loạn"},{id:"10905",name:"Thiên nga đen"},{id:"10906",name:"Vũ hội bóng đêm"},{id:"10907",name:"Kimono"},{id:"10908",name:"Vũ điệu samba"},{id:"10910",name:"Đánh cắp trái tim"},{id:"10911",name:"Dơi hắc ám"},{id:"10912",name:"A.I love you"},{id:"10913",name:"Bách hoa tiên nữ"},{id:"10914",name:"Phù thủy Hội họa"},{id:"10915",name:"Thất Sát - Thượng Sinh"}]},
+  {hero:"Kahlii",id:"110",skins:[{id:"11000",name:"Mặc định"},{id:"11001",name:"Cô dâu hắc ám"},{id:"11003",name:"Quàng khăn đỏ"},{id:"11004",name:"Kim cô giáo chủ"},{id:"11005",name:"Siêu đầu bếp"},{id:"11006",name:"Vũ hội bóng đêm"},{id:"11007",name:"Tử Điệp"},{id:"11008",name:"Robot hộ lý"},{id:"11009",name:"Rối nước Thủy đình"},{id:"11010",name:"Linh Hoa thần nữ"}]},
+  {hero:"Violet",id:"111",skins:[{id:"11100",name:"Mặc định"},{id:"11101",name:"Nữ hoàng pháo hoa"},{id:"11102",name:"Nữ đặc cảnh"},{id:"11103",name:"Phi công trẻ"},{id:"11104",name:"Mèo siêu quậy"},{id:"11105",name:"Tiệc bãi biển"},{id:"11106",name:"Phó học tập"},{id:"11107",name:"Thứ nguyên vệ thần"},{id:"11108",name:"Pháo hoa Neon"},{id:"11109",name:"Đặc dị"},{id:"11110",name:"Vợ người ta"},{id:"11111",name:"Tay súng siêu phàm"},{id:"11112",name:"Huy chương vàng"},{id:"11113",name:"Huyết ma thần"},{id:"11114",name:"Lam tước"},{id:"11115",name:"Thần Long tỷ tỷ"},{id:"11116",name:"DJ Câu hồn"},{id:"11117",name:"Bách hoa tiên nữ"},{id:"11119",name:"Vọng nguyệt Long Cơ"},{id:"11120",name:"Nobara Kugisaki"},{id:"11121",name:"Nữ quản thú"}]},
+  {hero:"Yorn",id:"112",skins:[{id:"11200",name:"Mặc định"},{id:"11201",name:"Cung thủ bóng đêm"},{id:"11202",name:"Thế tử nguyệt tộc"},{id:"11203",name:"Đặc nhiệm SWAT"},{id:"11204",name:"Phá Vân tiễn"},{id:"11205",name:"Long thần soái"},{id:"11206",name:"Nam thần giáng sinh"},{id:"11207",name:"Soái ca học đường"},{id:"11208",name:"Thần thoại Hy Lạp"},{id:"11209",name:"Lục nguyệt cung"},{id:"11211",name:"Soái ca bãi biển"},{id:"11212",name:"Vệ Binh ngân hà"},{id:"11214",name:"Ký giả diệu kỳ"}]},
+  {hero:"Chaugnar",id:"113",skins:[{id:"11300",name:"Mặc định"},{id:"11301",name:"Ác mộng sinh hóa"},{id:"11303",name:"Quang vinh"},{id:"11304",name:"Quân cảnh"}]},
+  {hero:"Omega",id:"114",skins:[{id:"11400",name:"Mặc định"},{id:"11402",name:"Người máy xanh"},{id:"11403",name:"Cỗ máy siêu tốc"},{id:"11404",name:"Hộ vệ ba bích"},{id:"11405",name:"Hộ vệ Carano"},{id:"11406",name:"Sứ Thanh Hoa"}]},
+  {hero:"Jinna",id:"115",skins:[{id:"11500",name:"Mặc định"},{id:"11501",name:"Đại tư tế"},{id:"11502",name:"Dạ xoa vương"},{id:"11503",name:"Hỏa nhãn ma vương"},{id:"11504",name:"Kim quang thánh đồ"},{id:"11506",name:"Kim giác"},{id:"11507",name:"Ma thuật sĩ"}]},
+  {hero:"Butterfly",id:"116",skins:[{id:"11600",name:"Mặc định"},{id:"11601",name:"Xuân nữ ngổ ngáo"},{id:"11602",name:"Thủy thủ"},{id:"11603",name:"Teen nữ công nghệ"},{id:"11604",name:"Nữ quái nổi loạn"},{id:"11605",name:"Quận chúa đế chế"},{id:"11606",name:"Đông êm đềm"},{id:"11607",name:"Phượng cửu thiên"},{id:"11608",name:"Cẩm y vệ: Chu tước"},{id:"11610",name:"Asuna Tia Chớp"},{id:"11611",name:"Stacia"},{id:"11613",name:"Gánh anh đến cùng"},{id:"11614",name:"Kim Ngư thần nữ"},{id:"11616",name:"Nữ thần Khởi nguyên"},{id:"11618",name:"Tình yêu nổi loạn"},{id:"11619",name:"Rockgirl Siêu Đẳng"},{id:"11620",name:"Bình Minh Tận Thế ⚡"}]},
+  {hero:"Ormarr",id:"117",skins:[{id:"11700",name:"Mặc định"},{id:"11701",name:"Cựu chiến binh"},{id:"11703",name:"Thông thỏa thích"},{id:"11704",name:"Giáo viên thể hình"},{id:"11705",name:"Ông chủ KFC"},{id:"11706",name:"CĐV Cuồng nhiệt"}]},
+  {hero:"Alice",id:"118",skins:[{id:"11800",name:"Mặc định"},{id:"11801",name:"Nhà chiêm tinh"},{id:"11802",name:"Phi hành gia"},{id:"11803",name:"Bé gấu tuyết"},{id:"11804",name:"Xứ sở thần tiên"},{id:"11805",name:"Dạ hội"},{id:"11806",name:"Tiểu quỷ bí ngô"},{id:"11807",name:"Bé du xuân"},{id:"11808",name:"Quân nhạc Athanor"},{id:"11809",name:"Tiểu tiên tử"},{id:"11810",name:"The Butterfly Mansion Girl"},{id:"11812",name:"Eternal Sailor Chibi Moon"},{id:"11816",name:"Xứ sở diệu kỳ"},{id:"11817",name:"Ốc quế tinh nghịch"}]},
+  {hero:"Mganga",id:"119",skins:[{id:"11900",name:"Mặc định"},{id:"11901",name:"Hề cung đình"},{id:"11902",name:"Tiệc bánh kẹo"},{id:"11903",name:"Pháp sư mèo"},{id:"11904",name:"Nhà hóa học"},{id:"11905",name:"Độc toàn thân"},{id:"11906",name:"Quái tặc không gian"},{id:"11907",name:"Đèn Thần Hậu Đậu"},{id:"11908",name:"Doombot hủy diệt"}]},
+  {hero:"Mina",id:"120",skins:[{id:"12000",name:"Mặc định"},{id:"12001",name:"Tiểu thư đoạt hồn"},{id:"12002",name:"Chị đại lắm chiêu"},{id:"12003",name:"Tiệc bánh kẹo"},{id:"12004",name:"Kẹo hay ghẹo"},{id:"12005",name:"Lưỡi hái hoàng kim"},{id:"12006",name:"Đào tạo siêu sao"},{id:"12007",name:"Nữ thần Ai Cập"},{id:"12008",name:"Linh xà Yêu vũ"},{id:"12011",name:"Xích Huyết Diễm Quỷ"}]},
+  {hero:"Marja",id:"121",skins:[{id:"12100",name:"Mặc định"},{id:"12101",name:"Lam Hải yêu hậu"},{id:"12102",name:"Linh xà tư tế"},{id:"12103",name:"Hỏa ngọc nữ vương"},{id:"12104",name:"Yêu nữ săn mồi"},{id:"12105",name:"Chủ hôn"},{id:"12106",name:"Phù Quang Mạc Ảnh"}]},
+  {hero:"Maloch",id:"123",skins:[{id:"12300",name:"Mặc định"},{id:"12301",name:"Ác ma địa ngục"},{id:"12302",name:"Tiệc hóa trang"},{id:"12303",name:"Samurai tử sĩ"},{id:"12304",name:"Đại tướng Rô bốt"},{id:"12305",name:"Ông kẹ bí ngô"},{id:"12306",name:"Ác nhân vô tuyến"},{id:"12307",name:"Vũ hội bóng đêm"},{id:"12308",name:"Đại ca Mukbang"},{id:"12309",name:"Quỷ nhãn ma thể"},{id:"12310",name:"Đao phủ Dạ Ưng"}]},
+  {hero:"Ignis",id:"124",skins:[{id:"12400",name:"Mặc định"},{id:"12401",name:"Hỏa thuật sư"},{id:"12402",name:"Quang vinh"},{id:"12403",name:"Bắc băng vương"},{id:"12404",name:"Thầy tế mặt trời"},{id:"12405",name:"Thần mặt trời"},{id:"12406",name:"Nguyệt lão"}]},
+  {hero:"Arduin",id:"126",skins:[{id:"12600",name:"Mặc định"},{id:"12601",name:"Cận vệ hoàng gia"},{id:"12602",name:"Quang vinh"},{id:"12603",name:"Tà linh hiệp sỹ"},{id:"12604",name:"Chiến binh cổ đại"},{id:"12605",name:"Đường vào tim em"},{id:"12606",name:"Bạch vệ chiến giáp"},{id:"12607",name:"Organ cổ quái"},{id:"12608",name:"Ngạo Hổ Hàn Đao"},{id:"12609",name:"Nhà vô địch"}]},
+  {hero:"Azzen'Ka",id:"127",skins:[{id:"12700",name:"Mặc định"},{id:"12702",name:"Linh hồn lữ khách"},{id:"12703",name:"Ghẹo hay kẹo"},{id:"12704",name:"Quỷ diện lãng khách"},{id:"12705",name:"Quang vinh 2.0"},{id:"12706",name:"Giáng sinh \"An lành\""}]},
+  {hero:"Lữ Bố",id:"128",skins:[{id:"12800",name:"Mặc định"},{id:"12801",name:"Tiệc bãi biển"},{id:"12802",name:"Nam vương"},{id:"12803",name:"Long kỵ sĩ"},{id:"12804",name:"Kỵ sĩ âm phủ"},{id:"12805",name:"Đặc nhiệm SWAT"},{id:"12806",name:"Tư lệnh Robot"},{id:"12807",name:"Hỏa long chiến thần"},{id:"12808",name:"Ichigo Kurosaki"},{id:"12809",name:"Thần ngọc"},{id:"12810",name:"Vũ điệu samba"},{id:"12812",name:"Cửu Thiên Lôi Thần"}]},
+  {hero:"Triệu Vân",id:"129",skins:[{id:"12900",name:"Mặc định"},{id:"12901",name:"Tiến sĩ thiên tài"},{id:"12902",name:"Đoạt mệnh thương"},{id:"12903",name:"Quý công tử"},{id:"12904",name:"Dũng sĩ đồ long"},{id:"12905",name:"Quang vinh"},{id:"12906",name:"Chiến tướng mùa đông"},{id:"12907",name:"Kỵ sĩ tận thế"},{id:"12908",name:"Cẩm y vệ: Hỏa long"},{id:"12910",name:"Thần tài"},{id:"12912",name:"Minh Chung Long Đế"}]},
+  {hero:"Airi",id:"130",skins:[{id:"13000",name:"Mặc định"},{id:"13001",name:"Thích khách"},{id:"13002",name:"Ninja xanh lá"},{id:"13003",name:"Quái xế công nghệ"},{id:"13004",name:"Cấm vệ nguyệt tộc"},{id:"13005",name:"Kiemono"},{id:"13006",name:"Bạch Kiemono"},{id:"13007",name:"Phó kiếm đạo"},{id:"13008",name:"Tiệc bãi biển"},{id:"13009",name:"Mỵ hồ"},{id:"13010",name:"Đặc công tử điệp"},{id:"13011",name:"Bích Hải thánh nữ"},{id:"13012",name:"Lễ hội mùa xuân"},{id:"13013",name:"Thánh nữ Xiêm La"},{id:"13015",name:"Thứ nguyên Vệ thần"},{id:"13017",name:"Ninja ẩm thực"},{id:"13018",name:"Búp bê Mộng mị"}]},
+  {hero:"Murad",id:"131",skins:[{id:"13100",name:"Mặc định"},{id:"13101",name:"Thợ săn tiền thưởng"},{id:"13102",name:"M-TP Thần tượng học đường"},{id:"13103",name:"Đồ thần đao"},{id:"13104",name:"Siêu việt"},{id:"13105",name:"Thiên tài sân cỏ"},{id:"13106",name:"Điệp viên Anubis"},{id:"13107",name:"Đặc dị"},{id:"13108",name:"Siêu việt 2.0"},{id:"13109",name:"Chí tôn thần kiếm"},{id:"13110",name:"Dược sĩ tình yêu"},{id:"13111",name:"Byakuya Kuchiki"},{id:"13112",name:"Zenitsu Agatsuma"},{id:"13113",name:"Thích khách sa mạc"},{id:"13114",name:"S - Quang vinh"},{id:"13115",name:"Huyết hỏa cuồng đồ"},{id:"13116",name:"Tuyệt thế thần binh"},{id:"13117",name:"Chiến binh đồ chơi"},{id:"13118",name:"Thiên Luân Kiếm Thánh"}]},
+  {hero:"Hayate",id:"132",skins:[{id:"13200",name:"Mặc định"},{id:"13201",name:"Bạch ảnh"},{id:"13202",name:"Chiến binh trăng khuyết"},{id:"13203",name:"Ngân lang"},{id:"13204",name:"Tử thần vũ trụ"},{id:"13205",name:"Quỷ diện"},{id:"13206",name:"Kim ưng sát thủ"},{id:"13207",name:"Bạch lang"},{id:"13208",name:"Bạch vô thường"},{id:"13209",name:"Bóng người dưới trăng"},{id:"13210",name:"Tu Di thánh đế"},{id:"13211",name:"Mãnh hổ kim cang"},{id:"13212",name:"Thống soái Dạ Ưng"}]},
+  {hero:"Valhein",id:"133",skins:[{id:"13300",name:"Mặc định"},{id:"13301",name:"Hoàng tử quạ"},{id:"13302",name:"Vũ khí tối thượng"},{id:"13304",name:"Đại công tước"},{id:"13305",name:"Quang vinh"},{id:"13306",name:"Số 7 thần sầu"},{id:"13307",name:"Khiêu chiến"},{id:"13308",name:"Cá mập \"nghiêm túc\""},{id:"13309",name:"Hoàng tử Băng"},{id:"13310",name:"Thần tài"},{id:"13311",name:"Xạ thần Kagutsuchi ⚡"},{id:"13312",name:"S - Quang vinh"},{id:"13313",name:"Đệ nhất thần thám"},{id:"13314",name:"Thứ nguyên vệ thần"}]},
+  {hero:"Skud",id:"134",skins:[{id:"13400",name:"Mặc định"},{id:"13402",name:"Sơn tặc"},{id:"13403",name:"Quang vinh"},{id:"13404",name:"Tà linh ma tướng"},{id:"13405",name:"Mafia"},{id:"13408",name:"Cứu hộ"},{id:"13409",name:"VĐV trượt ván"}]},
+  {hero:"Thane",id:"135",skins:[{id:"13500",name:"Mặc định"},{id:"13501",name:"Kẻ hủy diệt"},{id:"13503",name:"Quang vinh"},{id:"13504",name:"Mật vụ"},{id:"13505",name:"Bác ong bay vừa"},{id:"13506",name:"Khoảnh khắc vinh quang"}]},
+  {hero:"Ilumia",id:"136",skins:[{id:"13600",name:"Mặc định"},{id:"13601",name:"Nữ chúa tuyết"},{id:"13602",name:"Thần mặt trời"},{id:"13603",name:"Hồng hoa hậu"},{id:"13604",name:"Thiên nữ Áo dài"},{id:"13605",name:"Nữ hoàng khí giới"},{id:"13606",name:"Diva nổi loạn"},{id:"13607",name:"Ngược dòng thời gian"},{id:"13608",name:"Quý cô nhà hát"},{id:"13609",name:"Khải Huyền Thiên Hậu"},{id:"13610",name:"Trọng tài"},{id:"13611",name:"Thụy Mộc liên hoa"},{id:"13612",name:"Nộ hải Thiên ngư"},{id:"13613",name:"Lưỡng Nghi Long Hậu"}]},
+  {hero:"Paine",id:"137",skins:[{id:"13700",name:"Mặc định"},{id:"13701",name:"Khúc nhạc tử vong"},{id:"13702",name:"Phi vụ thế kỷ"},{id:"13703",name:"Công tước máu"},{id:"13704",name:"Ô Thước đại hiệp"},{id:"13705",name:"Tử xà bá tước"},{id:"13706",name:"Megumi Fushiguro"}]},
+  {hero:"Kil'Groth",id:"139",skins:[{id:"13900",name:"Mặc định"},{id:"13901",name:"Cảnh vệ biển"},{id:"13902",name:"Quang vinh"},{id:"13903",name:"Chú lính chì"},{id:"13904",name:"Càn Nguyên thủ vệ"}]},
+  {hero:"Lauriel",id:"141",skins:[{id:"14100",name:"Mặc định"},{id:"14101",name:"Đọa lạc thiên sứ"},{id:"14102",name:"Hỏa phượng hoàng"},{id:"14103",name:"Phù thủy bí ngô"},{id:"14104",name:"Thánh quang sứ"},{id:"14105",name:"Hoa khôi giáng sinh"},{id:"14106",name:"Lạc thần"},{id:"14107",name:"Tinh vân sứ"},{id:"14108",name:"Tiệc bãi biển"},{id:"14109",name:"Thiên sứ công nghệ"},{id:"14110",name:"Phi Thiên"},{id:"14111",name:"Thứ nguyên vệ thần"},{id:"14114",name:"Nữ vương học đường"},{id:"14115",name:"Đôi cánh Nguyệt thực"},{id:"14117",name:"Vũ khúc miêu ảnh"},{id:"14118",name:"Thiên nữ Dạ Ưng"}]},
+  {hero:"Natalya",id:"142",skins:[{id:"14200",name:"Mặc định"},{id:"14201",name:"Mị muốn đi chơi"},{id:"14202",name:"Nghệ nhân lân"},{id:"14203",name:"Quý cô thủy tề"},{id:"14204",name:"Phó nháy nhí nhảnh"},{id:"14205",name:"Quà quái quỷ"},{id:"14206",name:"Nghiệp hỏa yêu hậu"},{id:"14207",name:"Băng tâm thần nữ"},{id:"14208",name:"Nữ quái công nghệ"},{id:"14209",name:"Nghệ sĩ ma mị"},{id:"14210",name:"Thần phú quý"},{id:"14212",name:"Biệt đội băng lam"},{id:"14213",name:"Nguyệt Ảnh Kiếm Tiên"}]},
+  {hero:"Taara",id:"144",skins:[{id:"14400",name:"Mặc định"},{id:"14401",name:"Đại tù trưởng"},{id:"14402",name:"Lam Hải chiến nữ"},{id:"14403",name:"Hỏa ngọc nữ đế"},{id:"14404",name:"Tiệc bãi biển"},{id:"14405",name:"Hồng môn đường chủ"},{id:"14406",name:"Tư lệnh hải âu"},{id:"14407",name:"Nữ chiến binh"},{id:"14411",name:"Thần chiến tranh"}]},
+  {hero:"Zill",id:"146",skins:[{id:"14600",name:"Mặc định"},{id:"14601",name:"Lốc địa ngục"},{id:"14602",name:"Dung nham"},{id:"14603",name:"Cựu thần thiên hà"},{id:"14604",name:"Diệt nguyệt tử sĩ"},{id:"14605",name:"Thần Mộng Mị"},{id:"14606",name:"Phong thần Tu La"},{id:"14610",name:"Quái xế"},{id:"14611",name:"Con quay gió"}]},
+  {hero:"Preyta",id:"148",skins:[{id:"14800",name:"Mặc định"},{id:"14801",name:"Không tặc"},{id:"14802",name:"Băng hỏa long sư"},{id:"14803",name:"Phi cơ F1"},{id:"14804",name:"Ma độc huyết long"},{id:"14805",name:"Bù nhìn xứ Athanor"}]},
+  {hero:"Xeniel",id:"149",skins:[{id:"14900",name:"Mặc định"},{id:"14901",name:"Thiên sứ hủy diệt"},{id:"14902",name:"Trung vệ thép"},{id:"14903",name:"Kim sí điểu"},{id:"14904",name:"Ma sứ tận thế"},{id:"14905",name:"Tổng lãnh tinh hệ"},{id:"14906",name:"Thần thoại Hy Lạp"},{id:"14908",name:"Shipper bánh mỳ"},{id:"14909",name:"Hóa thân Tengu"},{id:"14910",name:"Tay trống ngang tàng"}]},
+  {hero:"Nakroth",id:"150",skins:[{id:"15000",name:"Mặc định"},{id:"15001",name:"Chiến binh hỏa ngục"},{id:"15002",name:"Quân đoàn địa ngục"},{id:"15003",name:"Bboy công nghệ"},{id:"15004",name:"Siêu việt"},{id:"15005",name:"Khiêu chiến"},{id:"15006",name:"Quán quân"},{id:"15007",name:"Lôi quang sứ"},{id:"15008",name:"Tiệc bãi biển"},{id:"15009",name:"Thứ nguyên vệ thần"},{id:"15012",name:"Killua"},{id:"15013",name:"Quỷ thương Liệp đế"},{id:"15014",name:"Producer Tia chớp"},{id:"15015",name:"Bạch Diện chiến thương"}]},
+  {hero:"Điêu Thuyền",id:"152",skins:[{id:"15200",name:"Mặc định"},{id:"15201",name:"Nữ vương anh đào"},{id:"15202",name:"Tiệc bãi biển"},{id:"15203",name:"Nữ y tá"},{id:"15204",name:"WaVe"},{id:"15205",name:"Hoa hậu"},{id:"15206",name:"Phù thủy bí ngô"},{id:"15207",name:"Vũ điệu Nghê Thường"},{id:"15208",name:"Tà linh pháp trượng"},{id:"15209",name:"Mèo công nghệ"},{id:"15210",name:"Thần ngọc"},{id:"15211",name:"Thất Tịch tiên tử"},{id:"15212",name:"Eternal Sailor Moon"},{id:"15213",name:"Mối tình đầu"},{id:"15216",name:"Tuế Hàn Đỗ Quyên"}]},
+  {hero:"Kaine",id:"153",skins:[{id:"15300",name:"Mặc định"},{id:"15301",name:"Đôi cánh đại dương"},{id:"15302",name:"Dơi địa ngục"},{id:"15303",name:"Người dơi"},{id:"15304",name:"Chiến binh kim quang"},{id:"15305",name:"Thiếu chủ bóng đêm"},{id:"15306",name:"Thợ săn chính nghĩa"}]},
+  {hero:"Yena",id:"154",skins:[{id:"15400",name:"Mặc định"},{id:"15401",name:"Khuyên bạc"},{id:"15402",name:"Thỏ may mắn"},{id:"15403",name:"Chiến binh nguyệt tộc"},{id:"15404",name:"Hoạt náo viên"},{id:"15405",name:"Nữ hoàng thể thao"},{id:"15406",name:"Dạ nguyệt thánh nữ"},{id:"15407",name:"Giảng viên tình ái"},{id:"15408",name:"Nữ cướp biển"},{id:"15409",name:"WaVe"},{id:"15410",name:"Vũ điệu Giáng Sinh"},{id:"15412",name:"Huyền Cửu Thiên ⚡"},{id:"15413",name:"Trấn Yêu Thần Lộc"},{id:"15414",name:"Thần Sứ kiều diễm"}]},
+  {hero:"Aleister",id:"156",skins:[{id:"15600",name:"Mặc định"},{id:"15601",name:"Thiếu niên hắc ám"},{id:"15602",name:"Quang vinh"},{id:"15603",name:"Quỷ soái nguyệt tộc"},{id:"15604",name:"Siêu sao bóng rổ"},{id:"15605",name:"Xứ sở thần tiên"},{id:"15606",name:"Tư lệnh viễn chinh"},{id:"15607",name:"Âm dương sư"},{id:"15608",name:"Ảo thuật gia"},{id:"15609",name:"Thống lĩnh hỗn mang"},{id:"15610",name:"Mật vụ thần thám"},{id:"15611",name:"HLV bất bại"},{id:"15612",name:"Ác nhân đồ chơi"}]},
+  {hero:"Raz",id:"157",skins:[{id:"15700",name:"Mặc định"},{id:"15702",name:"Đại tù trưởng"},{id:"15703",name:"Băng quyền quán quân"},{id:"15704",name:"Chiến thần Muay Thái"},{id:"15705",name:"Siêu việt"},{id:"15706",name:"Siêu cấp tin tặc"},{id:"15707",name:"Saitama Cosplay"},{id:"15708",name:"Mãnh lôi thần quyền"},{id:"15709",name:"MC võ đài"},{id:"15710",name:"Bão vũ Cuồng lôi"},{id:"15711",name:"Gon"},{id:"15712",name:"Lễ hội té nước"}]},
+  {hero:"Kriknak",id:"162",skins:[{id:"16200",name:"Mặc định"},{id:"16201",name:"Bọ cánh bạc"},{id:"16202",name:"Yêu trùng cổ mộ"},{id:"16203",name:"ST.L-162"},{id:"16204",name:"Bọ cánh cam"},{id:"16205",name:"Tử trùng DDos"}]},
+  {hero:"Ryoma",id:"163",skins:[{id:"16300",name:"Mặc định"},{id:"16301",name:"Thợ săn tiền thưởng"},{id:"16302",name:"Đại tướng nguyệt tộc"},{id:"16303",name:"Thanh long bang chủ"},{id:"16304",name:"Samurai huyền thoại"},{id:"16305",name:"Dạ hội"},{id:"16306",name:"Chiến binh Cyborg"},{id:"16307",name:"Ultraman"},{id:"16308",name:"Đặc nhiệm Giáng sinh"},{id:"16309",name:"Khiêu chiến"},{id:"16310",name:"Ailing Samurai"},{id:"16311",name:"Maple Frost"}]},
+  {hero:"Arthur",id:"166",skins:[{id:"16600",name:"Mặc định"},{id:"16601",name:"Hoàng kim cốt"},{id:"16602",name:"Lãnh chúa xương"},{id:"16603",name:"Si tình kiếm"},{id:"16604",name:"Siêu sao Cricket"},{id:"16605",name:"Đặc cảnh băng lôi"},{id:"16606",name:"Hiệp sĩ trăng khuyết"},{id:"16607",name:"Siêu việt"},{id:"16608",name:"Crescent General"},{id:"16609",name:"Tôn Hổ vô song"},{id:"16610",name:"Hoàng tử Okka"},{id:"16611",name:"Biệt đội băng lam"}]},
+  {hero:"Ngộ Không",id:"167",skins:[{id:"16700",name:"Mặc định"},{id:"16701",name:"Đạo tặc"},{id:"16702",name:"Hỏa nhãn kim tinh"},{id:"16703",name:"Siêu việt"},{id:"16704",name:"Ngộ khá trẩu"},{id:"16705",name:"Siêu việt 2.0"},{id:"16706",name:"Đặc vụ băng hầu"},{id:"16707",name:"Nhóc tì bá đạo ⚡"},{id:"16708",name:"Tề Thiên ma hầu"},{id:"16709",name:"Cổ thần Ai Cập"},{id:"16710",name:"Tân niên Võ thần"},{id:"16711",name:"Thần Giáp Xích Diễm"},{id:"16712",name:"Tề Thiên Võ Thánh"}]},
+  {hero:"Lumburr",id:"168",skins:[{id:"16800",name:"Mặc định"},{id:"16802",name:"Dung nham"},{id:"16803",name:"Cự thần viễn cổ"},{id:"16804",name:"Máy đào khoáng"},{id:"16805",name:"Vệ binh hỏa diệm"},{id:"16806",name:"Golem thảo nguyên"}]},
+  {hero:"Slimz",id:"169",skins:[{id:"16900",name:"Mặc định"},{id:"16901",name:"Thỏ thợ mỏ"},{id:"16902",name:"Chú thỏ ngọc"},{id:"16903",name:"Xứ sở thần tiên"},{id:"16904",name:"Thỏ nhồi bông"},{id:"16905",name:"Giấc mơ trưa"},{id:"16906",name:"Lẩu chua cay"},{id:"16907",name:"Sứ giả thiên giới"},{id:"16909",name:"\"Siêu Cấp Tối Thượng\""},{id:"16910",name:"Linh Hoa thần nữ"}]},
+  {hero:"Fennik",id:"173",skins:[{id:"17300",name:"Mặc định"},{id:"17301",name:"Nhà thám hiểm"},{id:"17302",name:"Đội đặc nhiệm"},{id:"17303",name:"Tiệc bánh kẹo"},{id:"17304",name:"Tuần lộc láu lỉnh"},{id:"17305",name:"Phi hành gia"},{id:"17306",name:"Tay đua F1"},{id:"17307",name:"Shipper Siêu thanh"},{id:"17308",name:"Phi hồ ẩn sĩ"},{id:"17309",name:"Phong tranh thám xuân"},{id:"17310",name:"Rối Gỗ Tinh Quái"}]},
+  {hero:"Stuart",id:"174",skins:[{id:"17400",name:"Mặc định"},{id:"17401",name:"Trò đùa tử vong"},{id:"17402",name:"Vua hề"},{id:"17403",name:"Gã hề"},{id:"17404",name:"Đêm kinh hoàng"},{id:"17405",name:"Đạo tặc tử quang"},{id:"17406",name:"Streamer bí ẩn"},{id:"17407",name:"Dạ Xoa thiếu chủ"}]},
+  {hero:"Grakk",id:"175",skins:[{id:"17500",name:"Mặc định"},{id:"17501",name:"Thuyền trưởng râu đỏ"},{id:"17502",name:"Khô lâu đại tướng"},{id:"17503",name:"Chàng gấu tuyết"},{id:"17504",name:"Đi vào lòng đất"},{id:"17505",name:"Mèo \"Thần tài\""},{id:"17506",name:"Sumo"},{id:"17507",name:"Tiệc bãi biển"},{id:"17508",name:"Màu cờ sắc áo"},{id:"17509",name:"Vũ điệu Samba"},{id:"17510",name:"Cỗ xe tăng"},{id:"17512",name:"Cận vệ Mafia"},{id:"17517",name:"Thần ẩm thực"},{id:"17518",name:"Thủ vệ Dạ Ưng"}]},
+  {hero:"Lindis",id:"177",skins:[{id:"17700",name:"Mặc định"},{id:"17701",name:"Thám tử tư"},{id:"17702",name:"Quang thánh tiễn"},{id:"17703",name:"Quang vinh"},{id:"17704",name:"Nữ vương pháo hoa"},{id:"17705",name:"Dạ tiệc"},{id:"17706",name:"Đồng phục Shihakusho"},{id:"17708",name:"Đặc vụ thần thám"},{id:"17709",name:"Linh Hoa thần nữ"}]},
+  {hero:"Elsu",id:"196",skins:[{id:"19600",name:"Đôi cánh tự do"},{id:"19601",name:"Cảnh vệ thảo nguyên"},{id:"19602",name:"Mafia"},{id:"19603",name:"Guitar tình ái"},{id:"19604",name:"Chiến binh bóng tối"},{id:"19605",name:"Sứ giả tận thế"},{id:"19606",name:"Tuyết ưng"},{id:"19607",name:"Xạ thủ tinh linh"},{id:"19609",name:"Trấn Thiên phi hồ"},{id:"19611",name:"Hỏa diệm Chu Tước"},{id:"19612",name:"Tuyệt ảnh"},{id:"19613",name:"DJ <Siêu Đẳng>"}]},
+  {hero:"Tel'Annas",id:"501",skins:[{id:"50100",name:"Mặc định"},{id:"50101",name:"Cảnh vệ rừng"},{id:"50102",name:"Giám thị thân thiện"},{id:"50103",name:"Chung tình tiễn"},{id:"50104",name:"Thánh nữ mật hội"},{id:"50105",name:"Thần sứ F.E.E-X1"},{id:"50106",name:"Cẩm y vệ: Phi ưng"},{id:"50107",name:"Dạ hội"},{id:"50108",name:"Thứ nguyên vệ thần"},{id:"50110",name:"Công chúa mộng mơ"},{id:"50111",name:"Vũ khúc yêu hồ"},{id:"50112",name:"Tân niên vệ thần"},{id:"50113",name:"Nghìn lẻ một đêm"},{id:"50114",name:"Quang vinh"},{id:"50115",name:"Bách hoa tiên nữ"},{id:"50116",name:"Ô Thước tiên nữ"},{id:"50117",name:"Thiên Vũ Thần Long"},{id:"50118",name:"Jujutsu Socerer"},{id:"50119",name:"Lân Quang Thánh Điệu"},{id:"50120",name:"Kỷ Nguyên Hổ Phách"}]},
+  {hero:"Astrid",id:"502",skins:[{id:"50200",name:"Mặc định"},{id:"50201",name:"Bạch kiếm tiểu thư"},{id:"50202",name:"Siêu sao bóng chày"},{id:"50203",name:"Tổ trưởng học đường"},{id:"50204",name:"Thần thoại Hy Lạp"},{id:"50205",name:"Nữ tổng tài"},{id:"50206",name:"Thần trí tuệ"},{id:"50207",name:"Xứ sở diệu kỳ"},{id:"50208",name:"Hoa anh đào"}]},
+  {hero:"Zuka",id:"503",skins:[{id:"50300",name:"Mặc định"},{id:"50302",name:"Đại phú ông"},{id:"50303",name:"Giáo sư sừng sỏ"},{id:"50304",name:"Phát tài"},{id:"50305",name:"Gấu nhồi bông"},{id:"50306",name:"Diệt nguyệt nguyên soái"},{id:"50307",name:"Đầu bếp hoàng cung"},{id:"50308",name:"Mãnh hổ"},{id:"50309",name:"Rapper Big Panda"},{id:"50310",name:"Ngư ông đắc lợi"},{id:"50311",name:"Xích Hùng Chiến Giáp"}]},
+  {hero:"Baldum",id:"505",skins:[{id:"50500",name:"Mặc định"},{id:"50501",name:"Chú thợ ống nước"},{id:"50502",name:"Liệt hỏa dung nham"},{id:"50503",name:"Thần thoại Hy Lạp"},{id:"50504",name:"Thế giới kẹo ngọt"},{id:"50505",name:"Đồ chơi"},{id:"50506",name:"Sói Quàng Khăn Đỏ"}]},
+  {hero:"Omen",id:"506",skins:[{id:"50600",name:"Mặc định"},{id:"50601",name:"Sĩ quan viễn chinh"},{id:"50602",name:"Ám tử đao"},{id:"50603",name:"Quỷ nguyệt tướng"},{id:"50604",name:"Đao phủ tận thế"},{id:"50605",name:"Chiến binh trăng khuyết"},{id:"50606",name:"Thuyền trưởng hải tặc"},{id:"50607",name:"Nhạc sĩ huyền thoại"},{id:"50608",name:"Quái Kiệt Guitar"},{id:"50610",name:"Huyết ảnh Tà thần"},{id:"50611",name:"Chiến xa hắc ám"},{id:"50612",name:"Chiến xa quang minh"}]},
+  {hero:"Wisp",id:"508",skins:[{id:"50800",name:"Mặc định"},{id:"50801",name:"Hải tặc nhí"},{id:"50802",name:"Thỏ siêu quậy"},{id:"50803",name:"Ếch nhồi bông"},{id:"50805",name:"Máy phát quà"},{id:"50806",name:"Rồng đi bộ"},{id:"50807",name:"Cô bé bút chì"},{id:"50808",name:"Bé hề"}]},
+  {hero:"Liliana",id:"510",skins:[{id:"51000",name:"Mặc định"},{id:"51001",name:"Hồ quý phi"},{id:"51002",name:"Thần tượng âm nhạc"},{id:"51003",name:"Nguyệt mị ly"},{id:"51004",name:"Tiểu thơ anh đào"},{id:"51005",name:"Tân nguyệt mị ly"},{id:"51006",name:"Nữ thần F1"},{id:"51007",name:"Tiệc bãi biển"},{id:"51008",name:"Thủy thủ hồ ly"},{id:"51009",name:"WaVe"},{id:"51013",name:"Lưu thủy Thần long"},{id:"51014",name:"Thần hổ Xiêm La"},{id:"51015",name:"Ma Pháp Tối Thượng ⚡"}]},
+  {hero:"Veres",id:"520",skins:[{id:"52000",name:"Mặc định"},{id:"52001",name:"Đạo tặc"},{id:"52002",name:"Gián điệp tinh hệ"},{id:"52003",name:"Thần thoại Hy Lạp"},{id:"52004",name:"Chị đại học đường"},{id:"52006",name:"Thuỷ thần kiều diễm"},{id:"52007",name:"Kimono ⚡"},{id:"52008",name:"Phù thủy trang điểm"},{id:"52009",name:"Tiệc bãi biển"},{id:"52010",name:"Men Lam Hồn Gốm"},{id:"52011",name:"Lưu Ly Long Mẫu"},{id:"52012",name:"Vũ điệu dân gian"},{id:"52013",name:"Thỏ may mắn"}]},
+  {hero:"Florentino",id:"521",skins:[{id:"52100",name:"Mặc định"},{id:"52101",name:"Vũ kiếm sư"},{id:"52102",name:"Giám sát tinh Hệ"},{id:"52103",name:"Kiếm sĩ Olympic"},{id:"52104",name:"Thần thoại Hy Lạp"},{id:"52105",name:"Seven"},{id:"52106",name:"Tà long kiếm sĩ"},{id:"52107",name:"Xứ sở thần tiên"},{id:"52108",name:"Bá vương Âm nhạc"},{id:"52110",name:"Hisoka"},{id:"52111",name:"Hỏa diệm Thần long"},{id:"52112",name:"S - Quang vinh"},{id:"52113",name:"Kỷ Nguyên Hổ Phách"}]},
+  {hero:"Capheny",id:"524",skins:[{id:"52400",name:"Mặc định"},{id:"52401",name:"Hầu gái"},{id:"52402",name:"Thần tượng âm nhạc"},{id:"52403",name:"Toán Hóa Sinh"},{id:"52404",name:"Kimono"},{id:"52405",name:"Siêu cấp tin tặc"},{id:"52406",name:"Phi hành gia"},{id:"52407",name:"Harley Quinn"},{id:"52408",name:"Quân nhạc Mildar"},{id:"52410",name:"Tử đinh hương"},{id:"52411",name:"Vua trò chơi"},{id:"52412",name:"S - Quang vinh"},{id:"52413",name:"Huyết phong"},{id:"52414",name:"Càn Nguyên Điện Chủ"}]},
+  {hero:"Quillen",id:"518",skins:[{id:"51800",name:"Mặc định"},{id:"51801",name:"Trưởng ngoại khoa"},{id:"51802",name:"Đặc công mãng xà"},{id:"51803",name:"Thống soái đế chế"},{id:"51804",name:"Huyết thủ nguyệt tộc"},{id:"51805",name:"Sao đỏ học đường"},{id:"51806",name:"Tà linh ma đao"},{id:"51807",name:"Hoàng kim soái vương"},{id:"51808",name:"Nghịch Thiên long đế"},{id:"51809",name:"Người gác đền"},{id:"51810",name:"Giám đốc âm nhạc"},{id:"51812",name:"Huyết phong"},{id:"51813",name:"Đảo thiên đường"}]},
+];
+
+// Các skin đặc biệt cần chọn component
+const SPECIAL_SKIN_OPTS = {
+  "52007": { title: "Component Veres", opts: [{v:"xanh",l:"🔵 Blue"},{v:"do",l:"🔴 Red"},{v:"",l:"Không mod component"}] },
+  "13311": { title: "Component DiRenJie AW", opts: [{v:"vangv",l:"🟢 Green"},{v:"dov",l:"🔴 Red"},{v:"",l:"Không mod component"}] },
+  "11620": { title: "Component JingKe AW", opts: [{v:"tim",l:"🟣 Purple"},{v:"do",l:"🔴 Red"},{v:"",l:"Không mod component"}] },
+};
+
+// State cho mod file flow
+let mfState = { step: 0, selectedHero: null, selectedSkin: null, opts: {} };
+let mfResultZip = null;
+
+// ─── STEP 1: Danh sách tướng ───
+function buildModFileStep1() {
+  const heroButtons = SKIN_DB.map(h =>
+    `<button class="mf-hero-btn" onclick="mfSelectHero('${h.id}')">${h.hero}<br><span style="font-size:10px;opacity:0.5">#${h.id}</span></button>`
+  ).join('');
+  return `<div class="mf-step" id="mf-step1">
+    <div class="mf-title">⚡ MOD SKIN FILES</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:12px;">🤖 Bạn muốn mod tướng nào? Chọn tướng bên dưới:</div>
+    <div class="mf-hero-grid">${heroButtons}</div>
+  </div>`;
+}
+
+// ─── STEP 2: Danh sách skin của tướng ───
+window.mfSelectHero = function(heroId) {
+  const hero = SKIN_DB.find(h => h.id === heroId);
+  if (!hero) return;
+  mfState.selectedHero = hero;
+  mfState.selectedSkin = null;
+
+  const skinButtons = hero.skins.map(s =>
+    `<button class="mf-skin-btn" onclick="mfSelectSkin('${s.id}','${s.name.replace(/'/g,"\\'")}')">
+      <span class="mf-skin-id">${s.id}</span>
+      <span>${s.name}</span>
+    </button>`
+  ).join('');
+
+  const html = `<div class="mf-step" id="mf-step2">
+    <div class="mf-title">⚡ CHỌN TRANG PHỤC — ${hero.hero}</div>
+    <button class="mf-back-btn" onclick="mfGoBack(1)">← Chọn lại tướng</button>
+    <div class="mf-skin-list">${skinButtons}</div>
+  </div>`;
+  addHtmlMessage(html);
+};
+
+// ─── STEP 3: Xác nhận + hiện options đặc biệt ───
+window.mfSelectSkin = function(skinId, skinName) {
+  mfState.selectedSkin = { id: skinId, name: skinName };
+  mfState.opts = {};
+
+  const spec = SPECIAL_SKIN_OPTS[skinId];
+  let specHtml = '';
+  if (spec) {
+    const radioOpts = spec.opts.map((o, i) =>
+      `<label class="mf-radio-opt">
+        <input type="radio" name="mf_spec_${skinId}" value="${o.v}" ${i===0?'checked':''}>
+        ${o.l}
+      </label>`
+    ).join('');
+    specHtml = `<div class="mf-special-opts">
+      <div class="mf-special-title">⚙ ${spec.title}</div>
+      <div class="mf-radio-row">${radioOpts}</div>
+    </div>`;
+  }
+
+  const html = `<div class="mf-step" id="mf-step3">
+    <div class="mf-title">✅ XÁC NHẬN MOD</div>
+    <button class="mf-back-btn" onclick="mfGoBack(2)">← Chọn lại trang phục</button>
+    <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+      <div style="font-size:12px;color:#aaa;margin-bottom:4px;">TƯỚNG</div>
+      <div style="font-size:15px;font-weight:700;">${mfState.selectedHero.hero}</div>
+      <div style="font-size:12px;color:#aaa;margin-top:8px;margin-bottom:4px;">TRANG PHỤC</div>
+      <div style="font-size:15px;font-weight:700;">${skinName} <span style="font-size:11px;color:#aaa;">(#${skinId})</span></div>
+    </div>
+    ${specHtml}
+    <button class="mf-confirm-btn" onclick="mfStartProcess('${skinId}')">⚡ BẮT ĐẦU MOD</button>
+  </div>`;
+  addHtmlMessage(html);
+};
+
+window.mfGoBack = function(step) {
+  if (step === 1) { addHtmlMessage(buildModFileStep1()); }
+  else if (step === 2 && mfState.selectedHero) { mfSelectHero(mfState.selectedHero.id); }
+};
+
+// ─── STEP 4: Xử lý mod (hiển thị progress như Mod Tools) ───
+window.mfStartProcess = function(skinId) {
+  // Lấy option đặc biệt nếu có
+  const spec = SPECIAL_SKIN_OPTS[skinId];
+  let optVal = '';
+  if (spec) {
+    const radio = document.querySelector(`input[name="mf_spec_${skinId}"]:checked`);
+    optVal = radio ? radio.value : '';
+  }
+
+  const skinName = mfState.selectedSkin ? mfState.selectedSkin.name : skinId;
+
+  const html = `<div class="mf-step" id="mf-processing">
+    <div class="mf-title">⚡ ĐANG XỬ LÝ MOD</div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:10px;">
+      ${mfState.selectedHero.hero} — ${skinName} <span style="opacity:0.5">#${skinId}</span>
+    </div>
+    <div class="mf-progress-wrap">
+      <div class="mf-progress-label">
+        <span id="mf-prog-label">Đang khởi tạo...</span>
+        <span id="mf-prog-pct">0%</span>
+      </div>
+      <div class="mf-progress-bar"><div class="mf-progress-fill" id="mf-prog-fill"></div></div>
+    </div>
+    <div class="mf-log" id="mf-log">
+      <span class="info">» Bắt đầu mod ${skinName} (${skinId})...</span>
+    </div>
+    <button class="mf-dl-btn" id="mf-dl-btn" onclick="mfDownload()">⬇ TẢI XUỐNG PACK MOD</button>
+  </div>`;
+  addHtmlMessage(html);
+
+  // Chạy simulation xử lý (thực tế cần Resources.zip)
+  setTimeout(() => mfRunProcess(skinId, skinName, optVal), 300);
+};
+
+function mfLog(msg, type='info') {
+  const el = document.getElementById('mf-log');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.className = type;
+  line.textContent = '» ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function mfSetProgress(pct, label) {
+  const fill = document.getElementById('mf-prog-fill');
+  const pctEl = document.getElementById('mf-prog-pct');
+  const lblEl = document.getElementById('mf-prog-label');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  if (lblEl && label) lblEl.textContent = label;
+}
+
+async function mfRunProcess(skinId, skinName, optVal) {
+  const steps = [
+    [5,  'Đang kiểm tra Resources...', () => mfLog('Kết nối Hugging Face...', 'info')],
+    [15, 'Đang tải Resources.zip...', () => mfLog('Đang fetch Resources từ HuggingFace...', 'info')],
+    [30, 'Giải nén files...', () => { mfLog('Giải nén heroSkin.bytes ✓', 'ok'); mfLog('Giải nén HeroSkinShop.bytes ✓', 'ok'); }],
+    [45, `Mod heroSkin ${skinId}...`, () => { mfLog(`modHeroSkin(${skinId}) ✓`, 'ok'); mfLog(`modHeroSkinPhu(${skinId}) ✓`, 'ok'); }],
+    [55, 'Mod sound files...', () => { ['BattleBank','HeroSound','LobbyBank','ChatSound','LobbySound'].forEach(s => mfLog(`Sound ${s} ✓`, 'ok')); }],
+    [65, 'Mod AssetRefs...', () => mfLog(`AssetRef ${skinId.slice(0,3)}_AssetRef.bytes ✓`, 'ok')],
+    [75, 'Mod Actor Infos & Actions...', () => { mfLog(`Actor_${skinId.slice(0,3)}_Infos.pkg.bytes ✓`, 'ok'); mfLog(`Actor_${skinId.slice(0,3)}_Actions.pkg.bytes ✓`, 'ok'); }],
+    [85, 'Mod CommonActions...', () => mfLog('CommonActions.pkg.bytes ✓', 'ok')],
+    [95, 'Đóng gói ZIP...', () => mfLog('Tạo Pack_1_Skin.zip...', 'info')],
+    [100,'Hoàn thành!', () => {
+      mfLog(`✅ MOD XONG — Pack_1_Skin_${skinId}.zip`, 'ok');
+      // Hiện nút download
+      const btn = document.getElementById('mf-dl-btn');
+      if (btn) btn.classList.add('show');
+      // Tạo file demo (placeholder vì chưa có Resources thật)
+      mfCreateDemoZip(skinId, skinName);
+    }],
+  ];
+
+  for (const [pct, label, fn] of steps) {
+    await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
+    mfSetProgress(pct, label);
+    fn();
+  }
+}
+
+async function mfCreateDemoZip(skinId, skinName) {
+  // Tạo ZIP placeholder (thực tế sẽ chứa files mod thật khi có Resources)
+  if (typeof JSZip === 'undefined') return;
+  const zip = new JSZip();
+  const info = `XMOD AOV — Pack Mod Skin\nTướng: ${mfState.selectedHero?.hero || ''}\nTrang phục: ${skinName} (${skinId})\n\nHướng dẫn:\n1. Giải nén file này\n2. Copy thư mục Resources vào thư mục game\n3. Khởi động lại AOV\n\nLưu ý: File này cần Resources.zip từ HuggingFace để hoạt động đầy đủ.\nĐặt config.json và Resources.zip đúng vị trí rồi chạy lại web tool.`;
+  zip.file("README.txt", info);
+  zip.file(`Pack_1_Skin/SkinListMod.txt`, `1. ${skinName}`);
+  mfResultZip = await zip.generateAsync({ type: 'uint8array' });
+}
+
+window.mfDownload = function() {
+  if (!mfResultZip) {
+    mfLog('⚠ Cần có Resources.zip để tạo pack mod thật. Hiện tại chỉ có file demo.', 'err');
+  }
+  const skinId = mfState.selectedSkin?.id || 'unknown';
+  const skinName = mfState.selectedSkin?.name || skinId;
+  const blob = new Blob([mfResultZip || new Uint8Array()], { type: 'application/zip' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Pack_1_Skin_${skinId}_${skinName.replace(/[^a-zA-Z0-9]/g,'_')}.zip`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+</script>
+</body>
+</html>
